@@ -6,10 +6,11 @@ machine.
 
 The local credential broker is proven against the authenticated GitHub Copilot
 SDK, and a constrained Pi SDK actor has completed a real read, edit, and test
-task through that broker. Remote actor and AKS work remains in progress. See
-[STATUS.md](STATUS.md) for verified capabilities, [DESIGN.md](DESIGN.md) for
-the authoritative design, and [docs/LAB_NOTES.md](docs/LAB_NOTES.md) for the
-append-only experiment record.
+task through that broker. Trusted archive/patch transport and the pinned
+upstream Agent Substrate lifecycle are also proven locally. Remote actor and AKS
+work remains in progress. See [STATUS.md](STATUS.md) for verified capabilities,
+[DESIGN.md](DESIGN.md) for the authoritative design, and
+[docs/LAB_NOTES.md](docs/LAB_NOTES.md) for the append-only experiment record.
 
 ## Security boundary
 
@@ -40,7 +41,8 @@ tool-free SDK session using the already logged-in local user, and requires the
 model to return `PISA_COPILOT_OK`. No GitHub token is accepted by the broker API
 or printed by the test.
 
-Commands for Pi and AKS experiments will be added only after they are proven.
+AKS commands will be added only after they are proven against the dedicated POC
+resource group.
 
 ## Local broker
 
@@ -118,3 +120,25 @@ commit—is reproducible with:
 ```bash
 npm run smoke:transport:local
 ```
+
+## Pinned Agent Substrate kind baseline
+
+The official upstream repository is pinned to
+`bc51ef2452c4bf4c0542cd6850040c9ed1033421`. The ignored checkout runs in a
+dedicated `pisa-substrate` kind cluster with all Kubernetes commands forced to
+the `kind-pisa-substrate` context.
+
+The local Docker node exposed no `/dev/kvm`, so this baseline used upstream
+gVisor workers. It proved:
+
+- a healthy control plane and three-worker counter pool;
+- routed actor creation and activation;
+- node-local `Full` pause/resume preserving memory and durable files;
+- committed `Data` suspend/resume preserving durable files and cold-booting
+  memory as declared;
+- committed `Full` suspend/resume preserving both memory and durable files.
+
+Use the exact commands in
+[deploy/substrate/README.md](deploy/substrate/README.md). Sanitized results are
+in [experiments/005-substrate-kind/RESULTS.md](experiments/005-substrate-kind/RESULTS.md).
+This proof does not claim Substrate microVM or AKS compatibility.

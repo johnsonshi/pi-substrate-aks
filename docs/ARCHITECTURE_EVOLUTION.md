@@ -191,3 +191,56 @@ symlinks, protected policy changes, and post-export patch tampering.
 
 - Relay and artifact transport across the AKS boundary.
 - Remote process, network, and kernel isolation.
+
+## v5 - Pinned local Substrate actor lifecycle
+
+```text
+Trusted workstation
+  | kubectl on explicit kind-pisa-substrate context
+  | loopback port-forward only
+  v
+Dedicated kind node (arm64 Docker VM, no /dev/kvm)
+  +-- Agent Substrate control plane
+  +-- Valkey + RustFS snapshot storage
+  +-- atenet router
+  `-- three-worker gVisor pool
+        |
+        +-- counter actor: onPause Full / onCommit Data
+        `-- counter-full actor: onPause Full / onCommit Full
+```
+
+### Reason for change
+
+AKS should not become the first place where upstream control-plane and lifecycle
+semantics are understood. The local baseline isolates Substrate behavior from
+Azure node, networking, and managed-control-plane variables.
+
+### Lifecycle result
+
+```text
+Pause + Full
+  node-local snapshot -> worker released -> memory and DurableDir restored
+
+Suspend + Data
+  object snapshot -> worker released -> DurableDir restored, process cold-boots
+
+Suspend + Full
+  object snapshot -> worker released -> memory and DurableDir restored
+```
+
+### Security implications
+
+The router was reachable only through a loopback port-forward. No actor or
+broker service was published. The actors received no GitHub, Copilot, Azure,
+kubeconfig, or workstation credential. gVisor is useful local isolation
+evidence but is not accepted as a substitute for the pending AKS sandbox
+boundary.
+
+### Remaining unknowns
+
+- Whether the pinned control plane installs on managed AKS with its required
+  certificate integration.
+- Which standard nested-virtualization AKS placement can safely expose KVM to a
+  Substrate worker.
+- Whether AKS Kata can host the direct Pi actor fallback while enforcing
+  service-account, IMDS, Kubernetes API, and egress denial.

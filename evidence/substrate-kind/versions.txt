@@ -1,0 +1,11 @@
+captured_at=2026-08-24T01:39:00-07:00
+upstream_repository=https://github.com/agent-substrate/substrate
+upstream_sha=bc51ef2452c4bf4c0542cd6850040c9ed1033421
+kind=v0.32.0
+ko=v0.19.1
+kubernetes_server=v1.36.1
+kubectl_client=v1.36.1
+cluster_context=kind-pisa-substrate
+node=pisa-substrate-control-plane
+node_architecture=arm64
+container_runtime=containerd://2.3.1

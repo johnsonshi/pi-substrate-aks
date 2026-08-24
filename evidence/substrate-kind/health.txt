@@ -1,0 +1,14 @@
+captured_at=2026-08-24T01:39:00-07:00
+dev_kvm=absent
+selected_worker_isolation=gvisor
+control_plane_unavailable_deployments=0
+non_running_or_succeeded_pods=0
+workerpool=ate-demo-counter/counter
+workerpool_replicas=3
+workerpool_ready_replicas=3
+stock_template_ready=True
+stock_template_on_pause=Full
+stock_template_on_commit=Data
+full_template_ready=True
+full_template_on_pause=Full
+full_template_on_commit=Full

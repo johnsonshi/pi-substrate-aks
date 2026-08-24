@@ -1,0 +1,7 @@
+stock_template=onPause:Full,onCommit:Data
+stock_first_request=memory:1,file:1
+stock_after_suspend_and_implicit_resume=memory:1,file:2
+stock_after_pause_and_explicit_resume=memory:2,file:3
+full_template=onPause:Full,onCommit:Full
+full_first_request=memory:1,file:1
+full_after_suspend_and_implicit_resume=memory:2,file:2

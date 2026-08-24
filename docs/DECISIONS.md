@@ -236,3 +236,49 @@ commit remains a trusted local action.
 - `packages/orchestrator/src/source-transport.ts`
 - `tests/integration/source-transport.test.ts`
 - `experiments/004-source-transport/RESULTS.md`
+
+## D-007: Pin Substrate and keep runtime placements distinct
+
+**Status:** accepted
+
+### Context
+
+Agent Substrate supports gVisor workers and a KVM-dependent microVM backend.
+AKS Pod Sandboxing also uses Kata, but it wraps a Kubernetes pod and does not
+automatically provide the same placement or nested KVM access as a
+Substrate-managed microVM.
+
+### Options considered
+
+- Treat any Kata-branded runtime as equivalent evidence.
+- Skip the local baseline and debug only on AKS.
+- Pin upstream, prove its lifecycle locally, and test every AKS placement as a
+  distinct compatibility case.
+
+### Decision
+
+Pin `agent-substrate/substrate` at
+`bc51ef2452c4bf4c0542cd6850040c9ed1033421`. Use upstream gVisor for the kind
+baseline when `/dev/kvm` is absent. Evaluate Substrate microVM on a normal
+nested-virtualization-capable AKS node separately from an AKS
+`kata-vm-isolation` actor-pod fallback. Never report one as evidence for the
+other.
+
+### Rationale
+
+Pinning makes control-plane and lifecycle behavior reproducible. Keeping the
+placements separate prevents a shared Kata implementation lineage from hiding
+different trust boundaries, device visibility, and control ownership.
+
+### Consequences
+
+The AKS matrix must record node pool, RuntimeClass, `/dev/kvm` visibility,
+worker placement, and effective isolation for each case. A blocked combination
+is an architectural result rather than a reason to weaken the actor credential
+or sandbox boundary.
+
+### Evidence
+
+- `experiments/005-substrate-kind/RESULTS.md`
+- `deploy/substrate/UPSTREAM_SHA`
+- `evidence/substrate-kind/health.txt`

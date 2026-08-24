@@ -16,7 +16,7 @@ Last updated: 2026-08-24
 | Node/npm available | PASS | Node `v24.19.0`; npm `12.0.2` |
 | Go available | PASS | Go `1.26.6` |
 | Helm available | PASS | Helm `v4.2.4` |
-| kind available | BLOCKED | Not installed at preflight; use project/user-local install |
+| kind available | PASS | Upstream-managed kind `v0.32.0`; dedicated `pisa-substrate` cluster |
 
 ## Capability matrix
 
@@ -24,12 +24,16 @@ Last updated: 2026-08-24
 |---|---|---|
 | Local Pi + Copilot CLI auth | PASS | `experiments/003-local-pi-copilot/RESULTS.md` |
 | Copilot credential stays local | PASS | Actor receives only an actor-scoped broker token; `experiments/001-local-broker/RESULTS.md` |
+| Pinned Agent Substrate control plane on kind | PASS | Exact SHA and healthy control plane in `experiments/005-substrate-kind/RESULTS.md` |
+| Substrate gVisor WorkerPool on kind | PASS | Three of three workers ready; no KVM device exposed |
+| Substrate microVM on local kind | BLOCKED | Docker kind node has no `/dev/kvm`; gVisor baseline used |
 | AKS isolated actor runtime | PENDING | |
 | Agent Substrate control plane on AKS | PENDING | |
 | Remote Pi actor | PENDING | |
 | Two concurrent Pi actors | PENDING | |
 | Workspace isolation | PASS (local policy) | Canonical-path and escape tests in `tests/integration/pi-actor.test.ts`; runtime isolation remains pending |
-| Substrate suspend/resume | PENDING | |
+| Substrate pause/resume | PASS (local kind) | Stock `onPause: Full` restored memory and DurableDir |
+| Substrate suspend/resume | PASS (local kind) | `onCommit: Data` and `onCommit: Full` semantics proven; `evidence/substrate-kind/lifecycle.txt` |
 | Prompt-injection fixture contained | PENDING | |
 | Local Copilot broker with fake backend | PASS | Four unit/integration cases in `tests/unit/copilot-broker.test.ts` |
 | Real Copilot SDK request using local login | PASS | `experiments/001-local-broker/RESULTS.md` |

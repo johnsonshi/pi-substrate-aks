@@ -351,3 +351,78 @@ process and Git metadata are untrusted.
 
 Pin and run the official Agent Substrate baseline on a local kind cluster before
 creating Azure resources.
+
+## 2026-08-24 01:39 PDT - Pinned Agent Substrate kind lifecycle
+
+### Goal
+
+Understand the exact upstream control plane, worker, routing, pause, and suspend
+behavior before introducing AKS-specific variables.
+
+### Hypothesis
+
+The pinned upstream revision can run with gVisor in a dedicated kind cluster
+without KVM. The stock counter should preserve only its declared `Data` commit
+scope across suspend, while a separate `Full` commit template should preserve
+process memory and durable files.
+
+### Environment
+
+- local git commit: `2264a31`
+- upstream Substrate SHA:
+  `bc51ef2452c4bf4c0542cd6850040c9ed1033421`
+- kind: `v0.32.0`
+- ko: `v0.19.1`
+- Kubernetes: `v1.36.1`
+- cluster/context: `pisa-substrate` / `kind-pisa-substrate`
+- runtime: local arm64 Docker kind node; `/dev/kvm` absent; gVisor selected
+- relevant paths: `.work/upstream/substrate`,
+  `deploy/substrate/`, `evidence/substrate-kind/`
+
+### Actions
+
+Cloned the official upstream repository under ignored `.work/`, checked out the
+exact SHA, and reviewed its bootstrap/install scripts before execution. Created
+the uniquely named kind cluster and local registry, installed the control plane
+and counter demo, built `kubectl-ate` into `.work/bin`, created an atespace and
+actor, and routed requests through a loopback-only port-forward.
+
+The stock template produced memory/file counts `1/1`, then `1/2` after a true
+suspend and routed resume. That result matches its `onCommit: Data` declaration.
+The first assertion had incorrectly expected memory `2` and lacked fail-fast
+shell behavior; the observed mismatch was treated as a failed expectation, not
+as a pass. Subsequent lifecycle checks used strict assertions.
+
+A stock `onPause: Full` pause/resume then produced `2/3`. A separate immutable
+`counter-full` template changed `onCommit` to `Full`, used a distinct snapshot
+location, reached `ACTOR_STATE_SUSPENDED`, and produced `2/2` after its second
+routed request.
+
+### Result
+
+**PASS.** The control plane and all three workers were healthy. Stock
+`Data` suspend preserved `DurableDir` and intentionally reset process memory.
+Node-local `Full` pause and committed `Full` suspend both preserved memory plus
+durable state. Local Substrate microVM execution was not attempted because the
+kind node had no KVM device.
+
+### Evidence
+
+- `experiments/005-substrate-kind/RESULTS.md`
+- `deploy/substrate/UPSTREAM_SHA`
+- `evidence/substrate-kind/versions.txt`
+- `evidence/substrate-kind/health.txt`
+- `evidence/substrate-kind/lifecycle.txt`
+
+### Interpretation
+
+Snapshot scope is an explicit lifecycle contract, not an implementation detail.
+The shipped counter demo proves data durability by default; a `Full` commit is
+required to claim process-memory continuity across suspend. AKS Kata and
+Substrate-managed microVMs remain separate placements requiring separate tests.
+
+### Decision / next step
+
+Keep this upstream SHA pinned, preserve gVisor/Data/Full evidence separately,
+and proceed to the dedicated AKS runtime matrix without weakening or conflating
+the isolation claims.

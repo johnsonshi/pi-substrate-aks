@@ -65,6 +65,18 @@ access that never leaves the local machine.
   The transport replays untrusted output in a disposable repository, checks
   paths, modes, links, credentials, and protected files, then stages the same
   patch in the clean trusted repository.
+- The default Substrate counter demo contains a useful lifecycle lesson:
+  `onPause: Full` but `onCommit: Data`. Pause/resume preserves process memory;
+  suspend/resume preserves its durable directory but intentionally cold-boots
+  the process. A separate immutable `onCommit: Full` template preserved both
+  counters across a true suspend.
+- The first lifecycle assertion expected memory continuity from a `Data`
+  snapshot and was wrong. Reading the template contract before interpreting the
+  counter values changed the experiment from an apparent failure into a precise
+  distinction between durable state and full process state.
+- The Apple-silicon Docker kind node exposed no `/dev/kvm`, so upstream selected
+  gVisor. That is a clean local baseline, not evidence that Substrate microVMs
+  work on AKS or that AKS Kata is the same placement.
 
 ## Measurements to capture
 
@@ -72,6 +84,7 @@ access that never leaves the local machine.
 - Actor task duration and patch size.
 - Concurrent actor isolation and peak resource use.
 - Suspend/resume duration and state preservation.
+- Data-only versus full-snapshot size and restore latency.
 
 ## Evidence worth preserving
 
