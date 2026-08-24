@@ -517,3 +517,56 @@ and capability-key checks.
 - `tests/security/prompt-injection.test.ts`
 - `experiments/010-security-acceptance/RESULTS.md`
 - `evidence/security/acceptance.txt`
+
+## D-013: Accept Agent Sandbox only as a dedicated-cluster Kata lifecycle layer
+
+**Status:** accepted
+
+### Context
+
+Pinned Agent Substrate cannot bootstrap its certificate identity plane on the
+managed AKS API. The official Agent Sandbox controller supports arbitrary Pod
+templates, including the already proven `kata-vm-isolation` RuntimeClass, and
+defines an administrative `Suspended` operating mode.
+
+Release `v0.5.6` also installs cluster-wide CRDs, conversion webhooks, and RBAC
+that can reconcile Pods, PVCs, Services, extension resources, and
+NetworkPolicies across namespaces. It has no namespace-scoped watch flag.
+
+### Options considered
+
+- Reject all controller-based fallback because its RBAC is broader than an
+  actor namespace.
+- Fork the controller to add namespace-scoped reconciliation.
+- Accept the pinned upstream controller only on the dedicated disposable POC
+  cluster, harden its pod, and keep actor controls independent.
+
+### Decision
+
+Accept upstream Agent Sandbox `v0.5.6` as the AKS Kata lifecycle layer only on
+`pisa-aks`. Verify the release-manifest digest, apply a Restricted Pod Security
+overlay to the controller, and run actors without service-account tokens,
+credentials, host paths, or egress. Treat `Suspended` as workspace
+suspend/resume only: it releases the pod and preserves PVCs but does not restore
+process memory or Pi in-memory sessions.
+
+### Rationale
+
+The cluster is POC-only and contains no unrelated tenant workload, so the
+controller's required cluster authority has a bounded blast radius. The direct
+experiment proved Kata placement, worker release, PVC state continuity, and a
+fresh process on resume. Describing the observed semantics narrowly avoids
+equating cold workspace restore with Substrate full-state restore.
+
+### Consequences
+
+The Agent Sandbox controller remains trusted infrastructure with Kubernetes API
+credentials. Production use would require a separate RBAC/watch-scope design
+review. The suspended probe retains a small PVC but no Kata VM. Agent Substrate
+full-state lifecycle remains proven only on kind and blocked on AKS.
+
+### Evidence
+
+- `experiments/011-agent-sandbox-aks/RESULTS.md`
+- `evidence/agent-sandbox/lifecycle.txt`
+- `deploy/agent-sandbox/`

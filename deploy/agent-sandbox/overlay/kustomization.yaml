@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../.work/agent-sandbox/sandbox-with-extensions.yaml
+patches:
+  - path: namespace-patch.yaml
+  - path: controller-patch.yaml

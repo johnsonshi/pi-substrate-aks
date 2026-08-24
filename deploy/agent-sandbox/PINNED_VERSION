@@ -1,0 +1,7 @@
+UPSTREAM_REPOSITORY=https://github.com/kubernetes-sigs/agent-sandbox
+RELEASE=v0.5.6
+TAG_OBJECT_SHA=0a28fcdc886346d46525042a6ddf6fd94482f207
+COMMIT_SHA=211b7579cabed9460c1a692eb687084ff4c5879d
+MANIFEST=sandbox-with-extensions.yaml
+MANIFEST_SHA256=1696dbb6faded503149b3994badb599df5dcf24d5985466881784f442dd9c3e5
+CONTROLLER_IMAGE=registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.5.6

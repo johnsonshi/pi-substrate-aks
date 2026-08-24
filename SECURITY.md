@@ -62,6 +62,17 @@ upstream gVisor WorkerPool's host path, mount propagation, AppArmor, and broad
 capability requirements are not accepted as equivalent to the restricted
 direct Kata actor.
 
+The pinned OSS Agent Sandbox controller is trusted cluster infrastructure, not
+an actor. It necessarily holds a Kubernetes service-account token and
+cluster-wide reconciliation rights for Pods, PVCs, Services, CRDs, extension
+resources, and NetworkPolicies. Release `v0.5.6` has no namespace-scoped watch
+flag, so this authority is accepted only on the dedicated disposable POC
+cluster. A tracked overlay enforces Restricted Pod Security, non-root
+execution, RuntimeDefault seccomp, a read-only root filesystem, dropped
+capabilities, and no privilege escalation. Agent Sandbox workloads retain the
+actor invariants: no service-account token, no credential, no host path, and
+deny-all networking unless explicitly narrowed.
+
 The actor runs non-root under `kata-vm-isolation`, with a read-only root
 filesystem, dropped capabilities, no privilege escalation, no service-account
 token, no host volume, and an ephemeral `emptyDir` workspace. Cilium permits

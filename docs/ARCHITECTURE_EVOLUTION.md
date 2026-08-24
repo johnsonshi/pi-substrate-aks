@@ -454,3 +454,43 @@ capture capabilities.
 Sixteen local security-relevant tests and all live Kata probes passed.
 `make security` emitted `PISA_SECURITY_ACCEPTANCE_OK` and wrote sanitized
 evidence.
+
+## v11 - OSS Agent Sandbox lifecycle on direct AKS Kata
+
+```text
+Trusted Agent Sandbox controller (system pool)
+  +-- cluster-wide CRD/RBAC authority on dedicated POC cluster
+  +-- Restricted Pod Security hardening
+  `-- reconciles Sandbox operatingMode
+          |
+          v
+AKS Kata Sandbox (sandbox pool)
+  +-- deny-all network / no SA token / no credentials
+  +-- process state: ephemeral
+  `-- workspace: managed PVC
+          |
+          +-- Running: Kata pod + mounted workspace
+          +-- Suspended: no pod; PVC retained
+          `-- Running: new pod/process; workspace restored
+```
+
+### Reason for change
+
+Agent Substrate is blocked by managed certificate APIs on AKS, but the runtime
+matrix still required an official controller-based sandbox fallback and honest
+remote lifecycle semantics.
+
+### Security implications
+
+The Agent Sandbox controller, unlike an actor, holds a Kubernetes
+service-account token and broad cluster reconciliation rights. That is
+acceptable only on this dedicated cluster. The generated Sandbox does not
+inherit that identity and remains inside the measured Kata, filesystem, and
+network boundary.
+
+### Result
+
+The pinned controller managed a Kata Sandbox through suspend and resume.
+Suspension released the pod; resume created a new pod and process while
+restoring the PVC marker. Memory and Pi in-memory session state were not
+preserved.

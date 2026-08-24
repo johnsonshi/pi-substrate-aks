@@ -1,4 +1,4 @@
-.PHONY: aks-harness-image aks-provision aks-runtime-probe-image aks-runtime-probes aks-substrate-preflight aks-teardown aks-verify doctor security test
+.PHONY: aks-agent-sandbox aks-agent-sandbox-install aks-agent-sandbox-teardown aks-harness-image aks-provision aks-runtime-probe-image aks-runtime-probes aks-substrate-preflight aks-teardown aks-verify doctor security test
 
 doctor:
 	./scripts/preflight.sh
@@ -8,6 +8,15 @@ test:
 
 security:
 	./scripts/security-acceptance.sh
+
+aks-agent-sandbox-install:
+	./scripts/install-agent-sandbox.sh
+
+aks-agent-sandbox:
+	./scripts/experiment-agent-sandbox.sh
+
+aks-agent-sandbox-teardown:
+	./scripts/teardown-agent-sandbox.sh
 
 aks-provision:
 	./scripts/aks-provision.sh

@@ -798,3 +798,88 @@ independently removes identity, filesystem, and network paths.
 Keep adversarial fake-model behavior in the release gate. Continue with the OSS
 Agent Sandbox compatibility row and two isolated concurrent actors without
 weakening these accepted controls.
+
+## 2026-08-24 04:59 PDT - OSS Agent Sandbox on AKS Kata
+
+### Goal
+
+Test the official Agent Sandbox controller as the AKS Kata fallback and measure
+its actual remote suspend/resume semantics.
+
+### Hypothesis
+
+The controller can create a restricted Kata Sandbox on `pisa-aks`, delete its
+pod under `operatingMode: Suspended`, and restore a PVC-backed workspace into a
+new pod without giving the sandbox any Kubernetes or external credential.
+
+### Environment
+
+- local git baseline: `1e1f50c`
+- Agent Sandbox release: `v0.5.6`
+- tag object: `0a28fcdc886346d46525042a6ddf6fd94482f207`
+- resolved commit: `211b7579cabed9460c1a692eb687084ff4c5879d`
+- release manifest SHA-256:
+  `1696dbb6faded503149b3994badb599df5dcf24d5985466881784f442dd9c3e5`
+- AKS/context: `pisa-aks`
+- actor runtime: `kata-vm-isolation`
+
+### Actions
+
+Downloaded the official combined manifest to `.work/`, verified its digest,
+and resolved the annotated tag before mutation. The initial research report had
+named a different example commit; the tag resolved to `211b7579...`.
+
+Reviewed the actual resources. The release creates four CRDs, two
+ClusterRoles/Bindings, a self-certified conversion webhook, and a controller
+with cross-namespace Pod/PVC/Service/extension/NetworkPolicy authority. It has
+no namespace-scoped watch flag. Added a tracked overlay for Restricted Pod
+Security, non-root execution, RuntimeDefault seccomp, read-only root, dropped
+capabilities, no privilege escalation, bounded resources, and writable
+ephemeral `/tmp`.
+
+The controller installed successfully. AKS warned that the public
+`registry.k8s.io` image was not in a configured policy allowlist but admitted
+it. Temporarily scaled the existing remote actor to zero, created a deny-all
+credential-free Kata Sandbox with a workspace PVC, wrote a marker, and probed
+identity and network paths.
+
+Patched the Sandbox to `Suspended`, waited for `Suspended=True` and pod
+deletion, then verified the PVC was still bound. Patched to `Running`, waited
+for a new ready pod, and compared pod UID, process boot identifier, and
+workspace marker. Suspended the probe again and restored the original actor.
+
+A post-experiment validation initially ran the full suite and security subset
+in parallel. Both processes used the same fixed outside-canary filename, so one
+test removed the other's file and caused an `ENOENT` assertion failure. Changed
+that sentinel to include the unique workspace basename. Sequential full and
+security suites then passed; actor behavior was unchanged.
+
+### Result
+
+**PASS.** The controller reached `1/1`. The Sandbox ran under
+`kata-vm-isolation`, had no service-account token or external
+credential-related environment names, and could not reach Kubernetes API,
+IMDS, or public internet.
+
+Suspension released the Kata pod. Resume created a different pod and process
+while restoring the exact workspace marker. The final probe state is
+`Suspended=True`, its 1 GiB PVC remains bound, no probe pod runs, and the
+original remote actor is back at `1/1`.
+
+### Evidence
+
+- `experiments/011-agent-sandbox-aks/RESULTS.md`
+- `evidence/agent-sandbox/lifecycle.txt`
+- `deploy/agent-sandbox/`
+
+### Interpretation
+
+Agent Sandbox is compatible with direct AKS Kata and offers real worker
+release plus workspace persistence. Its semantics are cold process restore,
+not memory/Pi-session restore and not Agent Substrate full snapshots.
+
+### Decision / next experiment
+
+Accept the controller only on the dedicated POC cluster because its watch and
+RBAC scope is cluster-wide. Keep the probe suspended. Reuse the established
+two-runtime pattern for concurrent implementer/reviewer actors.

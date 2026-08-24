@@ -70,7 +70,10 @@ describe("Pi actor", () => {
 
   test("blocks a model-requested path escape", async () => {
     const workspace = await fixtureWorkspace();
-    const outside = join(dirname(workspace), "outside-secret.txt");
+    const outside = join(
+      dirname(workspace),
+      `${basename(workspace)}-outside-secret.txt`,
+    );
     await writeFile(outside, "must-not-be-read", "utf8");
     const actor = await startActor(workspace, escapeAttemptResponder);
     const result = await actor.run("Inspect the repository.");

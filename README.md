@@ -200,6 +200,34 @@ accepted as equivalent to this POC's restricted direct Kata actor. Exact
 evidence is in
 [experiments/009-substrate-aks/RESULTS.md](experiments/009-substrate-aks/RESULTS.md).
 
+## OSS Agent Sandbox on AKS Kata
+
+The official Kubernetes SIG Apps Agent Sandbox controller is pinned to release
+`v0.5.6`, resolved commit
+`211b7579cabed9460c1a692eb687084ff4c5879d`, and a verified release-manifest
+digest. The tracked overlay runs the trusted controller under Restricted Pod
+Security. Its cluster-wide Pod/PVC/Service/CRD authority is accepted only on
+this dedicated disposable cluster; release `v0.5.6` has no namespace-scoped
+watch flag.
+
+Run the controller plus Kata lifecycle experiment:
+
+```bash
+make aks-agent-sandbox
+```
+
+The credential-free Sandbox has no service-account token or external
+credential-related environment names and a deny-all network policy. The
+experiment writes a marker to its workspace PVC, suspends until the Kata pod is
+deleted, resumes into a new pod/process, and verifies that the marker survived.
+It then leaves the probe suspended and restores the original remote actor.
+
+This is genuine worker-releasing workspace suspend/resume, but it is a cold
+process restart: Pi in-memory session state is not preserved. It is not called
+Agent Substrate full-state resume. See
+[experiments/011-agent-sandbox-aks/RESULTS.md](experiments/011-agent-sandbox-aks/RESULTS.md)
+and [deploy/agent-sandbox/README.md](deploy/agent-sandbox/README.md).
+
 ## Remote AKS Pi actor
 
 The remote path keeps authenticated Copilot entirely on the trusted

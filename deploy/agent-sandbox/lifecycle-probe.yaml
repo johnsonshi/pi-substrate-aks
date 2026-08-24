@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pi-agent-sandbox
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pisa-agent-sandbox-deny-all
+  namespace: pi-agent-sandbox
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-agent-sandbox-probe
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: agents.x-k8s.io/v1beta1
+kind: Sandbox
+metadata:
+  name: pisa-kata-lifecycle
+  namespace: pi-agent-sandbox
+spec:
+  operatingMode: Running
+  podTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pisa-agent-sandbox-probe
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      nodeSelector:
+        agentpool: sandbox
+      runtimeClassName: kata-vm-isolation
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: probe
+          image: pisasubstrate84acr.azurecr.io/pisa-harness@sha256:e165adfda8b91490fa4b7339541d4e5bfca52448d4d3a00fd3a86cd6d4d7b326
+          imagePullPolicy: Always
+          command:
+            - node
+            - -e
+          args:
+            - |
+              const { randomUUID } = require("node:crypto");
+              const { writeFileSync } = require("node:fs");
+              const http = require("node:http");
+              writeFileSync("/tmp/boot-id", randomUUID(), { mode: 0o600 });
+              http.createServer((request, response) => {
+                response.writeHead(request.url === "/healthz" ? 200 : 404);
+                response.end(request.url === "/healthz" ? "ok" : "not found");
+              }).listen(8080, "0.0.0.0");
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 3
+            failureThreshold: 100
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

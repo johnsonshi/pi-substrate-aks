@@ -37,11 +37,15 @@ Last updated: 2026-08-24
 | Substrate microVM inside AKS Kata | BLOCKED | No guest KVM; host-device placement could not create the Kata sandbox |
 | Agent Substrate control plane on AKS | BLOCKED | Managed API omits required PodCertificateRequest and ClusterTrustBundle resources; `experiments/009-substrate-aks/RESULTS.md` |
 | Substrate gVisor WorkerPool on AKS | BLOCKED | Control-plane identity cannot bootstrap; upstream worker also requires node host paths, mount propagation, AppArmor unconfined, and broad capabilities |
+| OSS Agent Sandbox controller on AKS | PASS | Pinned `v0.5.6` controller runs under Restricted Pod Security; cluster-wide authority accepted only on the dedicated POC cluster |
+| OSS Agent Sandbox + AKS Kata | PASS | Controller created and managed a credential-free, deny-all `kata-vm-isolation` Sandbox |
 | Remote Pi actor | PASS | Digest-pinned Kata actor accepted a manifest archive, edited and tested `math.js`, and returned a locally validated patch |
 | Two concurrent Pi actors | PENDING | |
 | Workspace isolation | PASS | Canonical-path/tool policy plus a private Kata `emptyDir`; no trusted filesystem mount |
 | Substrate pause/resume | PASS (local kind) | Stock `onPause: Full` restored memory and DurableDir |
 | Substrate suspend/resume | PASS (local kind) | `onCommit: Data` and `onCommit: Full` semantics proven; `evidence/substrate-kind/lifecycle.txt` |
+| Remote Agent Sandbox workspace suspend/resume | PASS | `Suspended=True` released the Kata pod; a new pod/process restored the PVC marker |
+| Remote process/Pi session resume | NOT PRESERVED | Agent Sandbox resume cold-starts the process; Substrate-managed full-state resume on AKS remains blocked |
 | Prompt-injection fixture contained | PASS | Adversarial fake model attempted outside/Git reads, outside write, and destructive command; all failed with no canary disclosure or mutation |
 | Consolidated security acceptance | PASS | `make security` ran 16 local identity/containment cases and live Kata token/path/network/service probes; `experiments/010-security-acceptance/RESULTS.md` |
 | Local Copilot broker with fake backend | PASS | Four unit/integration cases in `tests/unit/copilot-broker.test.ts` |

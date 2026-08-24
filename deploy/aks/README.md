@@ -88,6 +88,24 @@ worker also requires node host paths, mount propagation, AppArmor unconfined,
 and broad capabilities, so it is not accepted as the restricted AKS actor
 fallback.
 
+## OSS Agent Sandbox fallback
+
+The supported controller-based fallback uses the pinned official Agent Sandbox
+release and direct AKS Kata:
+
+```bash
+make aks-agent-sandbox
+```
+
+The release artifact is SHA-256 verified before a tracked hardening overlay is
+applied. The controller's cluster-wide reconciliation rights are accepted only
+on this dedicated POC cluster. The experiment proves a deny-all,
+credential-free Kata Sandbox and worker-releasing suspend/resume with workspace
+PVC persistence. Process and Pi in-memory state cold-start on resume.
+
+See [../agent-sandbox/README.md](../agent-sandbox/README.md) for the exact pin,
+RBAC implications, live-state expectations, and component-only teardown.
+
 ## Remote actor proof
 
 Build the amd64 harness image with the dedicated local buildx builder:

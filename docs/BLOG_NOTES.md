@@ -142,6 +142,19 @@ access that never leaves the local machine.
 - Security evidence should avoid becoming a credential collection mechanism.
   The live acceptance probe records only environment names, Secret key names,
   path booleans, placement, and connectivity outcomes—never values.
+- Resolve annotated release tags instead of trusting example permalinks. The
+  Agent Sandbox `v0.5.6` tag resolved to a different commit than an initial
+  research handoff reported, while the release-manifest digest stayed the
+  executable pin.
+- "Suspend/resume" needs a state taxonomy. Agent Sandbox released the Kata
+  worker and restored its PVC into a new process; that is workspace continuity,
+  not memory or Pi-session continuity.
+- A secure actor controller may still be highly trusted infrastructure. Agent
+  Sandbox `v0.5.6` watches cluster-wide and needs Kubernetes API credentials;
+  hardening its pod does not reduce its RBAC blast radius.
+- Adversarial tests need isolated adversarial artifacts too. A fixed canary
+  filename made two otherwise independent test processes race; deriving the
+  filename from each unique workspace restored safe parallel execution.
 
 ## Measurements to capture
 
