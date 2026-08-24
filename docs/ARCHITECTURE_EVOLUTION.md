@@ -285,3 +285,41 @@ normal configuration. Cilium is available for fail-closed actor policies.
 - KVM visibility from normal and Kata placements.
 - Substrate control-plane and worker compatibility with AKS.
 - Remote actor relay and artifact transport.
+
+## v7 - Measured AKS isolation boundary
+
+```text
+AKS sandbox node (Azure Linux, Hyper-V based host kernel)
+  |
+  +-- restricted runc probe
+  |     +-- host kernel
+  |     +-- no SA token / credentials / KVM
+  |     `-- Cilium deny-all
+  |
+  `-- restricted kata-vm-isolation probe
+        +-- separate guest kernel
+        +-- no SA token / credentials / host paths / KVM
+        `-- Cilium deny-all
+
+Substrate microVM candidates
+  +-- runc + host /dev/kvm -> path visible, KVM API unavailable
+  `-- Kata + host /dev/kvm -> pod sandbox creation blocked
+```
+
+### Reason for change
+
+Provisioned runtime intent is insufficient for untrusted coding agents. The
+POC now measures the controls from inside digest-pinned workloads.
+
+### Security implications
+
+The accepted actor fallback is the restricted Kata pod with no host volumes,
+no token automount, no capabilities, non-root UID, read-only rootfs, and
+deny-all network policy. The privileged KVM probe is not part of this
+architecture and its temporary namespace was deleted.
+
+### Result
+
+Direct AKS Kata satisfies the initial sandbox boundary. This pool cannot host a
+Substrate KVM microVM either outside or inside Kata. The gVisor/control-plane
+rows remain open.

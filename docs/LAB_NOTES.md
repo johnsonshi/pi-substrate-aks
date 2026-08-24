@@ -492,3 +492,79 @@ tested from actual pods before the remote actor is accepted.
 Keep ACR admin authentication disabled, use only ClusterIP/port-forward access,
 and begin the runtime compatibility matrix with credential-free diagnostic
 pods.
+
+## 2026-08-24 02:24 PDT - AKS Kata and KVM runtime probes
+
+### Goal
+
+Verify real isolation, identity, network, filesystem, and nested-hypervisor
+properties from workloads on the AKS sandbox pool.
+
+### Hypothesis
+
+A restricted `kata-vm-isolation` pod should have a distinct guest kernel and
+no actor credentials, service-account token, host paths, IMDS, Kubernetes API,
+public egress, or KVM. A normal privileged pod may expose node KVM if the pool
+can host Substrate-managed microVMs.
+
+### Environment
+
+- local git commit: `cbdd9e0`
+- AKS: `pisa-aks`, Kubernetes `1.35`
+- node pool: Azure Linux `Standard_D4s_v3`, `KataVmIsolation`
+- probe image:
+  `pisasubstrate84acr.azurecr.io/pisa-runtime-probe`
+- image digest:
+  `sha256:9e782490db59b4acea87c93fc454e3fe1a184ccd3ea66bce5d7574aeb77cc14e`
+- actor namespace: restricted Pod Security plus Cilium deny-all
+
+### Actions
+
+Implemented a static Go probe that emits only sanitized booleans, variable
+names, UID, kernel release, and connection status. Built a scratch amd64 image
+with a dedicated local buildx builder and pushed it to the managed-identity
+ACR path. The initial build accidentally selected a pre-existing Kubernetes
+buildx builder and failed because its namespace did not exist; the script now
+always selects the local `pisa-local-builder`.
+
+Ran digest-pinned runc and Kata pods with no service-account token, no volumes,
+non-root execution, read-only rootfs, no capabilities, and deny-all network
+policy. The first Kata sandbox failed because its `64Mi` limit was below the
+runtime's `128Mi` minimum. Increased request/limit to `128Mi`/`256Mi` and reran
+strict assertions successfully.
+
+Tested `/dev/kvm` separately in a temporary privileged diagnostic namespace.
+The node path failed Kubernetes `CharDevice` validation. With type validation
+removed only for diagnosis, runc could see the mounted path but
+`KVM_GET_API_VERSION` returned `0`. The equivalent Kata host-device pod timed
+out creating its sandbox. Removed the diagnostic pods and namespace.
+
+### Result
+
+**PASS** for direct AKS Kata isolation. The runc and Kata kernels differ.
+Both restricted probes ran as UID `65532`, found no credential variable names
+or service-account token, saw no selected host/operator paths or KVM, and could
+not reach the Kubernetes service, Azure IMDS, or public internet.
+
+**BLOCKED** for Substrate KVM microVM placement on this pool. Neither normal
+runc nor nested Kata placement provides a usable KVM API.
+
+### Evidence
+
+- `experiments/007-aks-runtime-matrix/RESULTS.md`
+- `evidence/aks-runtime/runtime-probes.txt`
+- `tools/runtime-probe/`
+- `deploy/aks/runtime-probes.yaml`
+- `deploy/aks/kvm-probes.yaml`
+
+### Interpretation
+
+AKS Kata is a credible direct Pi actor fallback, but its isolation boundary is
+not equivalent to giving a Substrate worker a nested KVM device. The runtime
+matrix must preserve this distinction.
+
+### Decision / next step
+
+Use direct AKS Kata as the secure fallback path. Continue with a separate
+pinned Substrate control-plane/gVisor attempt and the OSS Agent Sandbox
+controller path.

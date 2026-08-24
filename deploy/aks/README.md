@@ -43,6 +43,30 @@ contents must never be printed, committed, mounted, or sent to actors.
 No actor or broker service may use `LoadBalancer` or `NodePort`. Remote access
 uses ClusterIP services plus trusted local `kubectl port-forward`.
 
+## Runtime probes
+
+The digest-pinned runtime probes verify the direct runc and AKS Kata placements:
+
+```bash
+make aks-runtime-probes
+```
+
+To intentionally rebuild the small scratch probe image:
+
+```bash
+make aks-runtime-probe-image
+```
+
+Update `deploy/aks/runtime-probes.yaml` and
+`deploy/aks/kvm-probes.yaml` to the returned digest before applying it. The
+build uses the dedicated local `pisa-local-builder`; it does not reuse another
+project's buildx or Kubernetes builder.
+
+The privileged KVM manifest is diagnostic only. Apply it temporarily, record
+only sanitized device/API results, and remove the
+`pi-substrate-diagnostics` namespace immediately afterward. It is not an actor
+manifest.
+
 ## Teardown
 
 The working POC is intentionally left running. The only supported teardown

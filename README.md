@@ -161,3 +161,20 @@ LoadBalancer services. See [deploy/aks/README.md](deploy/aks/README.md) and
 Provisioning alone is not accepted as actor-isolation proof. Credential,
 service-account, Kubernetes API, IMDS, egress, KVM, and runtime placement probes
 remain part of the AKS compatibility matrix.
+
+The first matrix checkpoint is complete:
+
+```bash
+make aks-runtime-probes
+```
+
+Restricted runc and `kata-vm-isolation` pods ran the same digest-pinned scratch
+probe. Both had no prohibited credential variables, service-account token,
+host/operator paths, or KVM access; Cilium blocked Kubernetes API, IMDS, and
+public egress. Kata reported a distinct guest kernel. See
+[experiments/007-aks-runtime-matrix/RESULTS.md](experiments/007-aks-runtime-matrix/RESULTS.md).
+
+The same node does not expose a usable KVM API to a runc pod, and KVM
+passthrough into Kata could not create a sandbox. Therefore this pool is
+accepted for direct Kata actor isolation but blocked for nested Substrate
+microVM placement.

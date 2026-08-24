@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pi-substrate
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pisa-runtime-probe
+  namespace: pi-substrate
+automountServiceAccountToken: false
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pisa-runtime-probe-deny-all
+  namespace: pi-substrate
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-runtime-probe
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pisa-probe-runc
+  namespace: pi-substrate
+  labels:
+    app.kubernetes.io/name: pisa-runtime-probe
+    pisa.runtime/isolation: runc
+spec:
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  nodeSelector:
+    agentpool: sandbox
+  restartPolicy: Never
+  serviceAccountName: pisa-runtime-probe
+  terminationGracePeriodSeconds: 1
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: probe
+      image: pisasubstrate84acr.azurecr.io/pisa-runtime-probe@sha256:9e782490db59b4acea87c93fc454e3fe1a184ccd3ea66bce5d7574aeb77cc14e
+      imagePullPolicy: Always
+      resources:
+        requests:
+          cpu: 10m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        runAsGroup: 65532
+        runAsUser: 65532
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pisa-probe-kata
+  namespace: pi-substrate
+  labels:
+    app.kubernetes.io/name: pisa-runtime-probe
+    pisa.runtime/isolation: kata
+spec:
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  nodeSelector:
+    agentpool: sandbox
+  restartPolicy: Never
+  runtimeClassName: kata-vm-isolation
+  serviceAccountName: pisa-runtime-probe
+  terminationGracePeriodSeconds: 1
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: probe
+      image: pisasubstrate84acr.azurecr.io/pisa-runtime-probe@sha256:9e782490db59b4acea87c93fc454e3fe1a184ccd3ea66bce5d7574aeb77cc14e
+      imagePullPolicy: Always
+      resources:
+        requests:
+          cpu: 10m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        runAsGroup: 65532
+        runAsUser: 65532

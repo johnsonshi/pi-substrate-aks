@@ -325,3 +325,47 @@ prove Kata isolation or network denial.
 - `scripts/aks-provision.sh`
 - `experiments/006-aks-provisioning/RESULTS.md`
 - `evidence/aks-provisioning/topology.txt`
+
+## D-009: Accept direct AKS Kata and reject nested KVM on this pool
+
+**Status:** accepted
+
+### Context
+
+The sandbox node pool advertises `KataVmIsolation`, but Substrate's microVM
+worker expects a usable `/dev/kvm`. Marketing or RuntimeClass labels cannot
+establish actual device or isolation behavior.
+
+### Options considered
+
+- Assume nested KVM from the VM SKU and workload runtime.
+- Pass broad host devices into the actor.
+- Probe restricted direct Kata and a separate temporary KVM diagnostic
+  placement.
+
+### Decision
+
+Accept `kata-vm-isolation` as the direct isolated actor fallback after
+credential, token, filesystem, kernel, API, IMDS, and egress probes pass. Mark
+Substrate KVM microVM placement on this pool blocked: the node path is not a
+usable KVM character device, its API version is unavailable, and the
+Kata-host-device placement cannot create a sandbox.
+
+### Rationale
+
+Runtime effects are stronger evidence than configuration intent. A separate
+guest kernel plus fail-closed identity/network controls meets the direct actor
+boundary. Pretending an unusable KVM path satisfies Substrate would produce a
+false architecture claim.
+
+### Consequences
+
+Remote Pi work can proceed in direct AKS Kata even if Substrate's KVM backend
+remains unavailable. Pinned Substrate gVisor and control-plane compatibility
+still require their own tests. Privileged diagnostic resources must remain
+separate from actors and be removed after each probe.
+
+### Evidence
+
+- `experiments/007-aks-runtime-matrix/RESULTS.md`
+- `evidence/aks-runtime/runtime-probes.txt`

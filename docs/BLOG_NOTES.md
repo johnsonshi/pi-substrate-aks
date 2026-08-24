@@ -87,6 +87,19 @@ access that never leaves the local machine.
   instead of treating eventual consistency as failure.
 - The dedicated ACR uses managed pull and has admin authentication disabled, so
   image distribution does not require a registry password in the actor.
+- AKS Kata has a concrete minimum memory floor: the first `64Mi` diagnostic pod
+  failed before sandbox creation and reported a `128Mi` minimum. Treat runtime
+  overhead as part of actor capacity planning, not an incidental limit.
+- The same static scratch probe made runc-versus-Kata evidence easy to compare.
+  The kernels differed, while both had no service-account token, credential
+  variable names, KVM, host paths, Kubernetes API, IMDS, or public egress.
+- A nested-virtualization-capable VM size does not guarantee a Linux KVM device.
+  On this Azure Linux sandbox node, `/dev/kvm` failed character-device
+  validation; a privileged runc mount reported KVM API version `0`, and the
+  equivalent Kata placement could not create its sandbox.
+- A locally configured buildx default can silently target an unrelated
+  Kubernetes builder. Selecting a dedicated docker-container builder by name
+  kept image building local and avoided modifying cluster build resources.
 
 ## Measurements to capture
 

@@ -1,0 +1,110 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pi-substrate-diagnostics
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pisa-kvm-probe
+  namespace: pi-substrate-diagnostics
+automountServiceAccountToken: false
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pisa-kvm-probe-deny-all
+  namespace: pi-substrate-diagnostics
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-kvm-probe
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pisa-kvm-probe-runc
+  namespace: pi-substrate-diagnostics
+  labels:
+    app.kubernetes.io/name: pisa-kvm-probe
+    pisa.runtime/isolation: runc
+spec:
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  nodeSelector:
+    agentpool: sandbox
+  restartPolicy: Never
+  serviceAccountName: pisa-kvm-probe
+  terminationGracePeriodSeconds: 1
+  containers:
+    - name: probe
+      image: pisasubstrate84acr.azurecr.io/pisa-runtime-probe@sha256:9e782490db59b4acea87c93fc454e3fe1a184ccd3ea66bce5d7574aeb77cc14e
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 10m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
+      securityContext:
+        privileged: true
+        readOnlyRootFilesystem: true
+        runAsGroup: 0
+        runAsUser: 0
+      volumeMounts:
+        - name: kvm
+          mountPath: /dev/kvm
+          readOnly: true
+  volumes:
+    - name: kvm
+      hostPath:
+        path: /dev/kvm
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pisa-kvm-probe-kata
+  namespace: pi-substrate-diagnostics
+  labels:
+    app.kubernetes.io/name: pisa-kvm-probe
+    pisa.runtime/isolation: kata
+spec:
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  nodeSelector:
+    agentpool: sandbox
+  restartPolicy: Never
+  runtimeClassName: kata-vm-isolation
+  serviceAccountName: pisa-kvm-probe
+  terminationGracePeriodSeconds: 1
+  containers:
+    - name: probe
+      image: pisasubstrate84acr.azurecr.io/pisa-runtime-probe@sha256:9e782490db59b4acea87c93fc454e3fe1a184ccd3ea66bce5d7574aeb77cc14e
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 10m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 256Mi
+      securityContext:
+        privileged: true
+        readOnlyRootFilesystem: true
+        runAsGroup: 0
+        runAsUser: 0
+      volumeMounts:
+        - name: kvm
+          mountPath: /dev/kvm
+          readOnly: true
+  volumes:
+    - name: kvm
+      hostPath:
+        path: /dev/kvm
