@@ -41,6 +41,7 @@ Last updated: 2026-08-24
 | OSS Agent Sandbox + AKS Kata | PASS | Controller created and managed a credential-free, deny-all `kata-vm-isolation` Sandbox |
 | Remote Pi actor | PASS | Digest-pinned Kata actor accepted a manifest archive, edited and tested `math.js`, and returned a locally validated patch |
 | Two concurrent Pi actors | PASS | Relay observed two active jobs with 19.887 s overlap; isolated implementer and reviewer/tester patches were independently accepted and safely merged; `experiments/012-multi-actor/RESULTS.md` |
+| Final source-matched harness image | PASS | `pisasubstrate84acr.azurecr.io/pisa-harness@sha256:437eef6199f18fc3b30e4a972e38156315f0cd53e31de5c9607bbc2aa64e48c9` |
 | Actor-to-actor network isolation | PASS | Bidirectional actor Service connectivity was blocked while both actors retained relay/DNS access |
 | Workspace isolation | PASS | Canonical-path/tool policy plus a private Kata `emptyDir`; no trusted filesystem mount |
 | Substrate pause/resume | PASS (local kind) | Stock `onPause: Full` restored memory and DurableDir |
@@ -58,4 +59,4 @@ Last updated: 2026-08-24
 | Trusted archive-in / binary patch-out transport | PASS | `experiments/004-source-transport/RESULTS.md`; seven transport integration cases |
 | In-cluster relay and trusted local bridge | PASS | Actor-keyed target allowlist, redirect refusal, per-actor model/job-delivery/broker capabilities, shared tunnel/job-client capabilities, ClusterIP-only services, bounded proxying, and disconnect failure |
 | Remote patch acceptance gate | PASS | Remote service independently replays and tests the exact final patch; trusted tests run in a no-network container before commit |
-| Repo private and pushed | PASS | Bootstrap commit `3e1ef52` pushed; visibility reverified |
+| Repo private and pushed | PASS | Multi-actor milestone `0f0e517` pushed to `main`; visibility reverified as `PRIVATE` |

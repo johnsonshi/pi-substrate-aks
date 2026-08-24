@@ -1060,3 +1060,47 @@ portable NetworkPolicy.
 Accept this as the final multi-actor topology. Preserve the one-node Kata pool,
 leave the working POC running, and complete only final repository validation,
 commit/push, and documentation consistency checks.
+
+## 2026-08-24 06:18 PDT - Final repository handoff
+
+### Goal
+
+Make the complete proof durable and leave a morning-readable repository and
+working POC environment.
+
+### Actions
+
+Ran the full 30-test suite, TypeScript type checking, production dependency
+audit, consolidated local/live security acceptance, AKS topology verification,
+pinned Substrate AKS preflight, diff hygiene check, and private-repository
+visibility check. Added the evidence index and reproducible golden path.
+
+Committed and pushed the multi-actor milestone as `0f0e517`.
+
+### Result
+
+**PASS.** `main` contains every meaningful implementation, experiment record,
+decision, architecture iteration, security result, and sanitized evidence file.
+GitHub visibility is `PRIVATE`. Production dependency audit has zero findings.
+The expected Substrate preflight result remains blocked with
+`cluster_mutation=NONE`.
+
+The working Azure resources remain running in `rg-pi-substrate-aks`. The relay
+and both actors are private ClusterIP workloads; the actors are ready under
+`kata-vm-isolation`. No trusted local broker, bridge, or port-forward remains
+running, so model access is fail closed. The Agent Sandbox lifecycle probe
+remains suspended with its PVC retained.
+
+### Evidence
+
+- `README.md`
+- `STATUS.md`
+- `SECURITY.md`
+- `evidence/README.md`
+- `experiments/012-multi-actor/RESULTS.md`
+
+### Decision
+
+Leave the working POC resources running. Use only the guarded
+`PISA_CONFIRM_TEARDOWN=rg-pi-substrate-aks make aks-teardown` command when
+teardown is intentionally requested.
