@@ -55,3 +55,64 @@ configuration.
 Commit and push the bootstrap, then implement the local broker while independent
 upstream investigations run.
 
+## 2026-08-24 00:46 PDT - Local Copilot credential broker
+
+### Goal
+
+Prove a bounded broker can use the already authenticated local GitHub Copilot
+runtime without accepting or returning raw GitHub credentials.
+
+### Hypothesis
+
+The official TypeScript Copilot SDK can use the logged-in local user while a
+tool-free session and a narrow HTTP API keep actor-facing access separate from
+credential resolution.
+
+### Environment
+
+- local git commit: `3e1ef52`
+- upstream Substrate SHA: not yet selected
+- Pi version/SHA: not yet selected
+- AKS version: not yet provisioned
+- runtime: trusted macOS arm64 workstation, Node `v24.19.0`
+- GitHub Copilot CLI `1.0.81-3`
+- `@github/copilot-sdk` `1.0.11`
+- relevant paths: `packages/copilot-broker/`, `packages/protocol/`,
+  `scripts/smoke-copilot.ts`
+
+### Actions
+
+Implemented an actor-authenticated loopback broker, deterministic fake backend,
+and official Copilot SDK backend. Restricted SDK sessions to an empty available
+tool set, disabled cross-session storage, bounded request size/concurrency/time,
+and returned generic external errors. Installed pinned dependencies with
+lifecycle scripts disabled. Ran type checking, four broker tests, and one real
+model request.
+
+The local npm proxy initially rejected registry tarballs because remote package
+fetches were disabled. The installation was retried with the invocation-scoped
+`--allow-remote=all` option; no global npm configuration was changed.
+
+### Result
+
+All broker tests passed. The real authenticated request returned exactly
+`PISA_COPILOT_OK`. The smoke test supplied no GitHub token and printed no
+credential or session data.
+
+### Evidence
+
+- `experiments/001-local-broker/RESULTS.md`
+- `tests/unit/copilot-broker.test.ts`
+- `scripts/smoke-copilot.ts`
+- `package-lock.json`
+
+### Interpretation
+
+The official SDK is a viable local credential boundary. Actor credentials can
+authorize bounded model requests without exposing the underlying logged-in
+GitHub identity material.
+
+### Decision / next step
+
+Use this broker behind the future relay and implement a Pi SDK actor against its
+typed protocol.

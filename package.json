@@ -10,8 +10,15 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test",
-    "preflight": "./scripts/preflight.sh"
+    "build": "tsc",
+    "preflight": "./scripts/preflight.sh",
+    "smoke:copilot": "tsx scripts/smoke-copilot.ts",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "24.5.2",
+    "tsx": "4.20.5",
+    "typescript": "5.9.2"
   }
 }
-

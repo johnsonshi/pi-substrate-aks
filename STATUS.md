@@ -31,5 +31,6 @@ Last updated: 2026-08-24
 | Workspace isolation | PENDING | |
 | Substrate suspend/resume | PENDING | |
 | Prompt-injection fixture contained | PENDING | |
-| Repo private and pushed | IN PROGRESS | Private repository verified; first push pending |
-
+| Local Copilot broker with fake backend | PASS | Four unit/integration cases in `tests/unit/copilot-broker.test.ts` |
+| Real Copilot SDK request using local login | PASS | `experiments/001-local-broker/RESULTS.md` |
+| Repo private and pushed | PASS | Bootstrap commit `3e1ef52` pushed; visibility reverified |
