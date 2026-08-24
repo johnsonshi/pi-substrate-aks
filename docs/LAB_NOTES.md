@@ -116,3 +116,69 @@ GitHub identity material.
 
 Use this broker behind the future relay and implement a Pi SDK actor against its
 typed protocol.
+
+## 2026-08-24 01:01 PDT - Fake-backed Pi coding actor
+
+### Goal
+
+Prove Pi can complete a structured read, edit, and test loop while every
+operation remains confined to a disposable actor workspace.
+
+### Hypothesis
+
+A custom Pi model provider can translate broker tool-call envelopes into native
+Pi tool calls, execute constrained tools actor-side, and return their results
+without putting host tools or Copilot credentials behind the model API.
+
+### Environment
+
+- local git commit: `fc49ca2`
+- upstream Substrate SHA: not yet selected
+- Pi packages: `0.73.1`
+- Copilot SDK: `1.0.11`
+- AKS version: not yet provisioned
+- runtime: trusted macOS arm64 workstation, disposable temporary workspaces
+- relevant paths: `packages/pi-actor/`, `tests/integration/pi-actor.test.ts`
+
+### Actions
+
+Extended the broker protocol with typed prompt, tool-call, and tool-result
+envelopes. Added deferred Copilot custom-tool handlers that relay calls rather
+than executing them. Built a Pi actor around `createAgentSession()` with
+in-memory state, disabled resource discovery, canonical filesystem checks, and
+an exact test-command allowlist. Ran type checking, the complete broker suite,
+and four Pi integration cases.
+
+The first actor run exposed a macOS path alias: the fixture was created below
+`/var`, while `realpath()` canonicalized the policy root below `/private/var`.
+The policy now accepts either known lexical root for the initial containment
+check and still requires every existing path or writable ancestor to resolve
+under the canonical root.
+
+### Result
+
+**PASS.** The fake-backed actor read `math.js`, replaced subtraction with
+addition, ran the fixture's passing `npm test`, and changed no other file. A
+separate model-requested `../outside-secret.txt` read failed, and the outside
+file remained unchanged. Canonical symlink escape and
+Git-metadata-through-symlink attempts were also blocked. All eight broker and
+actor tests passed.
+
+### Evidence
+
+- `experiments/002-local-pi-actor/RESULTS.md`
+- `tests/integration/pi-actor.test.ts`
+- `packages/pi-actor/src/workspace-policy.ts`
+- `packages/pi-actor/src/broker-provider.ts`
+
+### Interpretation
+
+Structured actor-side tools preserve the broker's credential boundary while
+providing Pi a native coding loop. Canonical path policy is necessary defense in
+depth, but runtime isolation is still required to close process, race, and
+kernel-level escape paths.
+
+### Decision / next step
+
+Validate the same Pi loop against the real locally authenticated Copilot backend,
+then implement archive-in and patch-out source transport.

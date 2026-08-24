@@ -33,14 +33,21 @@ try {
         "content-type": "application/json",
       },
       body: JSON.stringify({
+        kind: "prompt",
         content:
           "Reply with exactly PISA_COPILOT_OK and no punctuation or explanation.",
       }),
     },
   );
   assertOk(messageResponse, "send message");
-  const message = (await messageResponse.json()) as { content: string };
-  if (message.content.trim() !== "PISA_COPILOT_OK") {
+  const message = (await messageResponse.json()) as {
+    kind: string;
+    content: string;
+  };
+  if (
+    message.kind !== "assistant" ||
+    message.content.trim() !== "PISA_COPILOT_OK"
+  ) {
     throw new Error("Copilot smoke response did not match the required marker");
   }
   console.log("PISA_COPILOT_OK");
@@ -53,4 +60,3 @@ function assertOk(response: Response, operation: string): void {
     throw new Error(`${operation} failed with HTTP ${response.status}`);
   }
 }
-

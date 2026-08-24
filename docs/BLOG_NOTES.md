@@ -37,6 +37,16 @@ access that never leaves the local machine.
 - A package-feed proxy can return remote tarball URLs while npm remote fetching
   is disabled. An invocation-scoped `--allow-remote=all` plus
   `--ignore-scripts` was enough without changing global configuration.
+- Plain assistant text is not a safe tool protocol. Pi expects structured tool
+  calls, so the broker now declares only actor tools while their SDK handlers
+  wait for execution results from the isolated actor.
+- Keeping tool execution actor-side makes the trust split concrete: the local
+  broker can use authenticated Copilot without gaining a model-driven path to
+  local files or commands.
+- macOS temporary paths exposed a useful canonicalization edge case:
+  `/var/...` may resolve to `/private/var/...`. Accepting either lexical root
+  alias before enforcing the final canonical-root check avoids false denials
+  without allowing symlink escape.
 
 ## Measurements to capture
 

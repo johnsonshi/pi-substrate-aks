@@ -33,15 +33,17 @@ describe("Copilot broker", () => {
       baseUrl,
       `/v1/session/${sessionId}/messages`,
       "POST",
-      { content: "hello" },
+      { kind: "prompt", content: "hello" },
       token,
     );
     assert.equal(message.status, 200);
     const response = (await message.json()) as {
       requestId: string;
+      kind: string;
       content: string;
     };
     assert.match(response.requestId, /^[0-9a-f-]{36}$/);
+    assert.equal(response.kind, "assistant");
     assert.equal(response.content, "FAKE[actorA]:hello");
     assert.equal(JSON.stringify(response).includes(token), false);
 
@@ -66,7 +68,7 @@ describe("Copilot broker", () => {
       baseUrl,
       `/v1/session/${sessionId}/messages`,
       "POST",
-      { content: "impersonate" },
+      { kind: "prompt", content: "impersonate" },
       tokenB,
     );
     assert.equal(response.status, 403);
@@ -129,7 +131,7 @@ describe("Copilot broker", () => {
       baseUrl,
       `/v1/session/${sessionId}/messages`,
       "POST",
-      { content: "slow" },
+      { kind: "prompt", content: "slow" },
       token,
     );
     await new Promise((resolve) => setTimeout(resolve, 5));
@@ -137,7 +139,7 @@ describe("Copilot broker", () => {
       baseUrl,
       `/v1/session/${sessionId}/messages`,
       "POST",
-      { content: "also slow" },
+      { kind: "prompt", content: "also slow" },
       token,
     );
     assert.equal(second.status, 429);

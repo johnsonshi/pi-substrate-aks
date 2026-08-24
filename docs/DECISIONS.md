@@ -70,7 +70,7 @@ files, and safety-policy changes before applying actor output.
 
 - `DESIGN.md` sections 4 and 8
 
-## D-003: Use the official Copilot SDK with tool-free sessions
+## D-003: Use the official Copilot SDK with explicit tool allowlists
 
 **Status:** accepted
 
@@ -89,14 +89,16 @@ token explicitly would violate the credential boundary.
 ### Decision
 
 Use `@github/copilot-sdk` `1.0.11` with `useLoggedInUser: true`, no token
-argument, `availableTools: []`, disabled cross-session storage, and a replaced
-text-only system message.
+argument, disabled cross-session storage, and a replaced system message.
+Text-only sessions use `availableTools: []`. Actor sessions expose only
+explicitly declared `custom:*` relay tools and disable tool search.
 
 ### Rationale
 
 The SDK is the supported typed JSON-RPC interface and has explicit session,
-timeout, and lifecycle APIs. Empty tool availability prevents the model runtime
-from executing local shell, file, network, or credential-discovery tools.
+timeout, tool, and lifecycle APIs. Explicit allowlisting prevents the model
+runtime from discovering or executing local shell, file, network, or
+credential-access tools.
 
 ### Consequences
 
@@ -107,3 +109,45 @@ contract tests. Actor-facing errors and logs must remain redacted.
 
 - `packages/copilot-broker/src/copilot-sdk-backend.ts`
 - `experiments/001-local-broker/RESULTS.md`
+
+## D-004: Declare tools at the broker and execute them only in the actor
+
+**Status:** accepted
+
+### Context
+
+Pi needs structured tool calls to run a coding loop. Returning tool instructions
+as model text is ambiguous, while executing SDK custom-tool handlers in the
+trusted broker would expose the local host to untrusted model actions.
+
+### Options considered
+
+- Parse tool requests from assistant text.
+- Execute Copilot SDK custom tools inside the trusted broker.
+- Declare bounded tools to Copilot, defer their handlers, execute calls through
+  Pi in the actor workspace, and return structured results.
+
+### Decision
+
+Use typed prompt, tool-call, and tool-result envelopes. SDK handlers publish a
+call and wait on a deferred result. Pi executes only its registered constrained
+tools, then the broker resolves the handler so the original Copilot turn can
+continue.
+
+### Rationale
+
+This preserves native structured tool calling without giving the trusted broker
+filesystem or command-execution responsibilities. Actor runtime policy remains
+the enforcement point even when repository content or model output is hostile.
+
+### Consequences
+
+The broker must bind each pending call to its session and reject unmatched
+results. Actor tools need canonical path checks, exact command allowlists, and
+stronger process/runtime isolation before remote use.
+
+### Evidence
+
+- `packages/copilot-broker/src/copilot-sdk-backend.ts`
+- `packages/pi-actor/src/broker-provider.ts`
+- `experiments/002-local-pi-actor/RESULTS.md`

@@ -7,8 +7,11 @@ import type {
   BrokerHealthResponse,
   CreateModelSessionRequest,
   CreateModelSessionResponse,
+  JsonValue,
   ModelMessageRequest,
   ModelMessageResponse,
+  ModelToolDefinition,
+  ModelToolResult,
 } from "@pisa/protocol";
 import type { ActorTokenAuthorizer } from "./actor-token-authorizer.js";
 import type { ModelBackend } from "./model-backend.js";
@@ -110,13 +113,19 @@ export class BrokerServer {
         if (
           !isRecord(body) ||
           (body.model !== undefined &&
-            (typeof body.model !== "string" || !isModelName(body.model)))
+            (typeof body.model !== "string" || !isModelName(body.model))) ||
+          (body.tools !== undefined && !isToolDefinitions(body.tools))
         ) {
-          throw new HttpError(400, "invalid_model", "Model name is invalid");
+          throw new HttpError(
+            400,
+            "invalid_session",
+            "Model session request is invalid",
+          );
         }
         const backendSessionId = await this.#backend.createSession({
           actorId,
           ...(body.model === undefined ? {} : { model: body.model }),
+          ...(body.tools === undefined ? {} : { tools: body.tools }),
         });
         const sessionId = randomUUID();
         this.#sessions.set(sessionId, { actorId, backendSessionId });
@@ -157,16 +166,11 @@ export class BrokerServer {
           request,
           this.#maxBodyBytes,
         );
-        if (
-          !isRecord(body) ||
-          typeof body.content !== "string" ||
-          body.content.length === 0 ||
-          body.content.length > this.#maxMessageCharacters
-        ) {
+        if (!isModelTurnRequest(body, this.#maxMessageCharacters)) {
           throw new HttpError(
             400,
             "invalid_message",
-            `Message must contain 1-${this.#maxMessageCharacters} characters`,
+            "Model turn request is invalid",
           );
         }
 
@@ -177,11 +181,11 @@ export class BrokerServer {
           this.#requestTimeoutMs,
         );
         try {
-          let content: string;
+          let turnResponse;
           try {
-            content = await this.#backend.sendMessage({
+            turnResponse = await this.#backend.sendMessage({
               sessionId: session.backendSessionId,
-              content: body.content,
+              turn: body,
               signal: controller.signal,
             });
           } catch (error) {
@@ -190,7 +194,10 @@ export class BrokerServer {
             }
             throw error;
           }
-          const result: ModelMessageResponse = { requestId, content };
+          const result: ModelMessageResponse = {
+            requestId,
+            ...turnResponse,
+          };
           sendJson(response, 200, result);
         } finally {
           clearTimeout(timeout);
@@ -265,6 +272,83 @@ async function readJson<T>(
 
 function isModelName(value: string): boolean {
   return /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(value);
+}
+
+function isToolDefinitions(value: unknown): value is ModelToolDefinition[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 16 &&
+    value.every(
+      (tool) =>
+        isRecord(tool) &&
+        typeof tool.name === "string" &&
+        /^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/.test(tool.name) &&
+        typeof tool.description === "string" &&
+        tool.description.length > 0 &&
+        tool.description.length <= 2_000 &&
+        isRecord(tool.inputSchema) &&
+        isJsonValue(tool.inputSchema),
+    ) &&
+    new Set(value.map((tool) => tool.name)).size === value.length
+  );
+}
+
+function isModelTurnRequest(
+  value: unknown,
+  maxMessageCharacters: number,
+): value is ModelMessageRequest {
+  if (!isRecord(value) || typeof value.kind !== "string") {
+    return false;
+  }
+  if (value.kind === "prompt") {
+    return (
+      typeof value.content === "string" &&
+      value.content.length > 0 &&
+      value.content.length <= maxMessageCharacters
+    );
+  }
+  return (
+    value.kind === "tool_results" &&
+    isToolResults(value.results, maxMessageCharacters)
+  );
+}
+
+function isToolResults(
+  value: unknown,
+  maxMessageCharacters: number,
+): value is ModelToolResult[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= 16 &&
+    value.every(
+      (result) =>
+        isRecord(result) &&
+        typeof result.toolCallId === "string" &&
+        result.toolCallId.length > 0 &&
+        result.toolCallId.length <= 128 &&
+        typeof result.content === "string" &&
+        result.content.length <= maxMessageCharacters &&
+        typeof result.isError === "boolean",
+    )
+  );
+}
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+  return isRecord(value) && Object.values(value).every(isJsonValue);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

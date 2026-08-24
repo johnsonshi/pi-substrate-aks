@@ -4,8 +4,9 @@ Private proof of concept for running credential-free Pi coding actors on isolate
 AKS workloads while keeping GitHub Copilot authentication on a trusted local
 machine.
 
-The local credential broker is implemented and proven against the authenticated
-GitHub Copilot SDK. Remote actor and AKS work remains in progress. See
+The local credential broker is proven against the authenticated GitHub Copilot
+SDK, and a constrained Pi SDK actor is proven against the deterministic broker.
+Real Pi-to-Copilot, remote actor, and AKS work remains in progress. See
 [STATUS.md](STATUS.md) for verified capabilities, [DESIGN.md](DESIGN.md) for
 the authoritative design, and [docs/LAB_NOTES.md](docs/LAB_NOTES.md) for the
 append-only experiment record.
@@ -62,3 +63,24 @@ npx tsx packages/copilot-broker/src/cli.ts
 ```
 
 Do not persist the token in this repository.
+
+## Local Pi actor
+
+`packages/pi-actor` wraps Pi's `createAgentSession()` with in-memory session and
+settings stores, disabled resource discovery, and four constrained tools:
+
+- `workspace_read`
+- `workspace_edit`
+- `workspace_write`
+- `workspace_test`
+
+The actor receives an ephemeral actor-scoped broker token, never a GitHub or
+Copilot credential. Filesystem operations reject `.git`, traversal, and
+canonical symlink escapes. Test execution uses exact command allowlisting and
+`spawn()` without a shell. The deterministic integration proof copies a broken
+calculator fixture, edits only `math.js`, runs `npm test`, and verifies an
+out-of-workspace read is blocked:
+
+```bash
+node --import tsx --test tests/integration/pi-actor.test.ts
+```
