@@ -108,6 +108,43 @@ container/Kata runtime boundary.
 
 ### Remaining unknowns
 
-- Real Copilot custom-tool interoperability through the complete Pi loop.
 - Archive-in and patch-out validation for untrusted source transport.
+- Remote process, network, and kernel isolation.
+
+## v3 - Real local Pi-to-Copilot coding loop
+
+```text
+Disposable fixture workspace
+  ^ constrained Pi tools
+  |
+Pi actor --actor token--> loopback broker
+                            |
+                            v
+                     Copilot SDK custom tools
+                            |
+                            v
+                  authenticated local Copilot CLI
+```
+
+### Reason for change
+
+The deterministic backend proved protocol mechanics but not compatibility with
+real Copilot custom-tool events and deferred handler continuation.
+
+### Result
+
+The real model requested actor tools, Pi fixed the broken addition function,
+`npm test` passed, and only `math.js` changed. The smoke client and actor supplied
+no GitHub/Copilot credential.
+
+### Security implications
+
+Authentication resolution remains inside the trusted broker process. The actor
+knows only its ephemeral broker token, and SDK tool handlers still execute no
+filesystem or shell operation locally.
+
+### Remaining unknowns
+
+- Validated archive-in and patch-out source transport.
+- Relay behavior across a private tunnel and disconnect.
 - Remote process, network, and kernel isolation.

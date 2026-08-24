@@ -22,7 +22,7 @@ Last updated: 2026-08-24
 
 | Capability | Status | Evidence |
 |---|---|---|
-| Local Pi + Copilot CLI auth | PENDING | |
+| Local Pi + Copilot CLI auth | PASS | `experiments/003-local-pi-copilot/RESULTS.md` |
 | Copilot credential stays local | PASS | Actor receives only an actor-scoped broker token; `experiments/001-local-broker/RESULTS.md` |
 | AKS isolated actor runtime | PENDING | |
 | Agent Substrate control plane on AKS | PENDING | |
@@ -34,4 +34,5 @@ Last updated: 2026-08-24
 | Local Copilot broker with fake backend | PASS | Four unit/integration cases in `tests/unit/copilot-broker.test.ts` |
 | Real Copilot SDK request using local login | PASS | `experiments/001-local-broker/RESULTS.md` |
 | Pi SDK actor with fake broker | PASS | `experiments/002-local-pi-actor/RESULTS.md` |
+| Real Pi coding task through local Copilot | PASS | Exact `PISA_PI_COPILOT_OK` smoke marker; `experiments/003-local-pi-copilot/RESULTS.md` |
 | Repo private and pushed | PASS | Bootstrap commit `3e1ef52` pushed; visibility reverified |

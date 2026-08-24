@@ -13,6 +13,7 @@
     "build": "tsc",
     "preflight": "./scripts/preflight.sh",
     "smoke:copilot": "tsx scripts/smoke-copilot.ts",
+    "smoke:pi-copilot": "tsx scripts/smoke-pi-copilot.ts",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },

@@ -5,8 +5,8 @@ AKS workloads while keeping GitHub Copilot authentication on a trusted local
 machine.
 
 The local credential broker is proven against the authenticated GitHub Copilot
-SDK, and a constrained Pi SDK actor is proven against the deterministic broker.
-Real Pi-to-Copilot, remote actor, and AKS work remains in progress. See
+SDK, and a constrained Pi SDK actor has completed a real read, edit, and test
+task through that broker. Remote actor and AKS work remains in progress. See
 [STATUS.md](STATUS.md) for verified capabilities, [DESIGN.md](DESIGN.md) for
 the authoritative design, and [docs/LAB_NOTES.md](docs/LAB_NOTES.md) for the
 append-only experiment record.
@@ -84,3 +84,14 @@ out-of-workspace read is blocked:
 ```bash
 node --import tsx --test tests/integration/pi-actor.test.ts
 ```
+
+The real end-to-end smoke consumes Copilot model requests and operates only on
+the repository-owned disposable fixture:
+
+```bash
+npm run smoke:pi-copilot
+```
+
+It must print exactly `PISA_PI_COPILOT_OK`. The actor receives only an ephemeral
+broker token; the SDK resolves the existing logged-in user inside the trusted
+local broker.

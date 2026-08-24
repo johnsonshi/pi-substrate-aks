@@ -47,6 +47,12 @@ access that never leaves the local machine.
   `/var/...` may resolve to `/private/var/...`. Accepting either lexical root
   alias before enforcing the final canonical-root check avoids false denials
   without allowing symlink escape.
+- The real Copilot SDK preserved one model turn across deferred tool handlers:
+  Pi executed read, edit, and test calls in the disposable actor workspace,
+  returned structured results, and received a final assistant response.
+- A narrow proof marker is useful evidence: the smoke prints only
+  `PISA_PI_COPILOT_OK`, not model text, session details, tool output, or
+  authentication material.
 
 ## Measurements to capture
 

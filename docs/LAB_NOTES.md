@@ -182,3 +182,58 @@ kernel-level escape paths.
 
 Validate the same Pi loop against the real locally authenticated Copilot backend,
 then implement archive-in and patch-out source transport.
+
+## 2026-08-24 01:07 PDT - Real Pi and local Copilot coding loop
+
+### Goal
+
+Prove the constrained Pi actor can complete a coding task through real Copilot
+custom tools while Copilot authentication remains exclusively in the trusted
+local broker.
+
+### Hypothesis
+
+The Copilot SDK can keep one `sendAndWait()` turn active while deferred custom
+tool handlers relay calls to Pi and await actor-side results.
+
+### Environment
+
+- local git commit: `6bd8c23`
+- upstream Substrate SHA: not yet selected
+- Pi packages: `0.73.1`
+- Copilot SDK: `1.0.11`
+- Copilot CLI: `1.0.81-3`
+- AKS version: not yet provisioned
+- runtime: trusted macOS arm64 workstation, disposable fixture workspace
+- relevant path: `scripts/smoke-pi-copilot.ts`
+
+### Actions
+
+Started the real SDK backend with logged-in-user resolution and an ephemeral
+actor identity. Copied the repository-owned broken-calculator fixture to a
+temporary workspace. Asked Pi to inspect `math.js`, correct the addition
+function, and run `npm test`. Asserted the file contents, changed-file set,
+successful test tool event, and non-empty final response. Removed the workspace
+after the run.
+
+### Result
+
+**PASS.** The real model drove the actor through read, edit, and test operations.
+The test passed, only `math.js` changed, and the script printed exactly
+`PISA_PI_COPILOT_OK`.
+
+### Evidence
+
+- `experiments/003-local-pi-copilot/RESULTS.md`
+- `scripts/smoke-pi-copilot.ts`
+- `packages/copilot-broker/src/copilot-sdk-backend.ts`
+
+### Interpretation
+
+Pi and the real Copilot SDK interoperate through deferred structured tools.
+Model authentication does not need to enter the actor process or workspace.
+
+### Decision / next step
+
+Implement trusted archive-in and validated patch-out transport before any actor
+receives non-fixture source.
