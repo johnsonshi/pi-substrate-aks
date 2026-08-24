@@ -1,44 +1,50 @@
-timestamp_utc=2026-08-24T12:04:49Z
+timestamp_utc=2026-08-24T13:13:05Z
 local_security_suite=START
-✔ relay forwards an authenticated actor through the trusted bridge (49.59175ms)
-✔ relay carries a maximally escaped body without dropping the bridge (21.547ms)
-✔ relay fails closed without a connected trusted bridge (2.733916ms)
-✔ relay rejects actor authentication before proxying (2.578875ms)
-✔ relay proxies capability-authenticated jobs only to a private target (15.642084ms)
-✔ relay rejects a malformed upgrade target without crashing (6.610042ms)
+✔ relay forwards an authenticated actor through the trusted bridge (67.482833ms)
+✔ relay carries a maximally escaped body without dropping the bridge (23.767209ms)
+✔ relay fails closed without a connected trusted bridge (4.4165ms)
+✔ relay rejects actor authentication before proxying (3.917375ms)
+✔ relay proxies capability-authenticated jobs only to a private target (8.322125ms)
+✔ relay refuses actor target redirects (3.943166ms)
+✔ relay routes concurrent jobs to actor-scoped targets (10.651417ms)
+✔ relay rejects a malformed upgrade target without crashing (3.894458ms)
 ▶ Pi actor
-  ✔ edits a fixture and runs its test through the fake broker (284.444209ms)
-  ✔ blocks a model-requested path escape (28.595208ms)
-  ✔ blocks a canonical symlink escape (18.880625ms)
-  ✔ blocks Git metadata through a symlink alias (24.746ms)
-  ✔ hard-kills an allowlisted test process group after timeout (1157.823625ms)
-✔ Pi actor (1515.271292ms)
-✔ repository prompt injection cannot escape actor policy (77.332917ms)
+  ✔ edits a fixture and runs its test through the fake broker (318.956417ms)
+  ✔ blocks a model-requested path escape (25.353291ms)
+  ✔ blocks a canonical symlink escape (25.689916ms)
+  ✔ blocks Git metadata through a symlink alias (21.019416ms)
+  ✔ hard-kills an allowlisted test process group after timeout (1160.413583ms)
+✔ Pi actor (1552.403041ms)
+✔ repository prompt injection cannot escape actor policy (101.2655ms)
 ▶ Copilot broker
-  ✔ serves credential-free health and authenticated model sessions (42.008ms)
-  ✔ prevents one actor from using another actor's session (10.589125ms)
-  ✔ rejects malformed and oversized requests without echoing input (8.87125ms)
-  ✔ enforces concurrency and request timeouts (34.521834ms)
-✔ Copilot broker (96.727125ms)
-ℹ tests 16
+  ✔ serves credential-free health and authenticated model sessions (40.046833ms)
+  ✔ prevents one actor from using another actor's session (11.492292ms)
+  ✔ rejects malformed and oversized requests without echoing input (7.680459ms)
+  ✔ enforces concurrency and request timeouts (37.725417ms)
+✔ Copilot broker (97.659833ms)
+ℹ tests 18
 ℹ suites 2
-ℹ pass 16
+ℹ pass 18
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 2755.57
+ℹ duration_ms 3114.783291
 local_security_suite=PASS
 remote_security_probe=START
-actor_pod=pisa-remote-actor-5c858dcd6d-zd4x8
+actor_count=2
+actor_ids=remote-implementer,remote-reviewer
 runtime_class=kata-vm-isolation
 service_account_token=false
 credential_environment_names=NONE
 kubernetes_api=blocked
 imds=blocked
+node_local=blocked
 public_internet=blocked
+actor_to_actor_network=blocked
 service_exposure=ClusterIP-only
 capability_secret_keys=expected
+cilium_host_entity_deny=valid
 PISA_REMOTE_SECURITY_OK
 remote_security_probe=PASS
 PISA_SECURITY_ACCEPTANCE_OK

@@ -32,13 +32,15 @@ repository. Safety-policy changes require an explicit trusted-call override.
 
 ## Remote model and job boundary
 
-The AKS relay is a ClusterIP-only service with four distinct POC capabilities:
+The AKS relay is a ClusterIP-only service. Each actor receives a distinct model
+capability and has a separate relay-to-actor delivery capability; the topology
+also has two shared trusted-side POC capabilities:
 
-- an actor capability authenticates model requests to the relay;
+- an actor-scoped capability authenticates model requests to the relay;
 - a tunnel capability authenticates the trusted local WebSocket bridge;
 - a trusted job-client capability authenticates archive/task submission;
-- a different delivery capability authenticates the relay's cluster-local
-  forward to the actor. The actor stores only its SHA-256 verifier, not the
+- a different per-actor delivery capability authenticates each relay
+  cluster-local forward. Each actor stores only its own SHA-256 verifier, not a
   reusable bearer.
 
 The relay never receives a GitHub or Copilot credential. It forwards only the
@@ -73,11 +75,17 @@ capabilities, and no privilege escalation. Agent Sandbox workloads retain the
 actor invariants: no service-account token, no credential, no host path, and
 deny-all networking unless explicitly narrowed.
 
-The actor runs non-root under `kata-vm-isolation`, with a read-only root
+Each actor runs non-root under `kata-vm-isolation`, with a read-only root
 filesystem, dropped capabilities, no privilege escalation, no service-account
 token, no host volume, and an ephemeral `emptyDir` workspace. Cilium permits
 actor ingress only from the relay and actor egress only to the relay and
-cluster DNS. The relay can egress only to the actor and cluster DNS.
+cluster DNS. A Cilium deny rule additionally blocks the `host`, `remote-node`,
+and `kube-apiserver` entities, closing the standard Kubernetes NetworkPolicy
+node-traffic exception. Actor-to-actor Service traffic is denied. The relay can
+egress only to actor-labeled pods and cluster DNS. Trusted job routing accepts
+only a configured actor ID mapped to a fixed cluster-local URL; callers cannot
+submit arbitrary targets, and the relay rejects downstream redirects rather
+than forwarding a job body to a second destination.
 
 ## Enforced prompt boundary
 
@@ -112,10 +120,11 @@ make security
 The command checks broker/relay actor identity, workspace and process
 containment, prompt-injection resistance, RuntimeClass placement,
 service-account token absence, external credential-related environment names,
-selected prohibited paths, Kubernetes API/IMDS/public egress denial,
-ClusterIP-only exposure, and the expected capability Secret key names. It
-never reads Secret values or environment values. Sanitized evidence is written
-to `evidence/security/acceptance.txt`.
+selected prohibited paths, Kubernetes API/IMDS/node-local/public egress denial,
+the valid Cilium host-entity deny policy, ClusterIP-only exposure, the expected
+capability Secret key names, and bidirectional actor-to-actor denial when the
+two-actor topology is deployed. It never reads Secret values or environment
+values. Sanitized evidence is written to `evidence/security/acceptance.txt`.
 
 ## Prohibited data
 

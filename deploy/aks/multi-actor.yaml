@@ -36,6 +36,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: pisa-model-relay
+        pisa.runtime/role: relay
       annotations:
         pisa.dev/deploy-revision: __PISA_DEPLOY_REVISION__
     spec:
@@ -59,13 +60,36 @@ spec:
             - tsx
             - packages/model-relay/src/relay-cli.ts
           env:
-            - name: PISA_RELAY_ACTOR_ID
-              value: remote-actor-1
-            - name: PISA_RELAY_ACTOR_TOKEN
+            - name: PISA_RELAY_ACTOR_COUNT
+              value: "2"
+            - name: PISA_RELAY_ACTOR_0_ID
+              value: remote-implementer
+            - name: PISA_RELAY_ACTOR_0_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: pisa-relay-capabilities
-                  key: actor-token
+                  key: implementer-actor-token
+            - name: PISA_RELAY_ACTOR_0_JOB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-relay-capabilities
+                  key: implementer-job-token
+            - name: PISA_RELAY_ACTOR_0_URL
+              value: http://pisa-remote-implementer.pi-substrate.svc.cluster.local:8080/v1/run
+            - name: PISA_RELAY_ACTOR_1_ID
+              value: remote-reviewer
+            - name: PISA_RELAY_ACTOR_1_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-relay-capabilities
+                  key: reviewer-actor-token
+            - name: PISA_RELAY_ACTOR_1_JOB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-relay-capabilities
+                  key: reviewer-job-token
+            - name: PISA_RELAY_ACTOR_1_URL
+              value: http://pisa-remote-reviewer.pi-substrate.svc.cluster.local:8080/v1/run
             - name: PISA_RELAY_TUNNEL_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -76,13 +100,6 @@ spec:
                 secretKeyRef:
                   name: pisa-relay-capabilities
                   key: job-client-token
-            - name: PISA_RELAY_ACTOR_JOB_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: pisa-relay-capabilities
-                  key: actor-job-token
-            - name: PISA_RELAY_ACTOR_URL
-              value: http://pisa-remote-actor.pi-substrate.svc.cluster.local:8080/v1/run
           ports:
             - name: http
               containerPort: 8080
@@ -135,7 +152,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pisa-remote-actor
+  name: pisa-remote-implementer
   namespace: pi-substrate
 spec:
   replicas: 1
@@ -143,15 +160,26 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app.kubernetes.io/name: pisa-remote-actor
+      app.kubernetes.io/name: pisa-remote-implementer
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: pisa-remote-actor
+        app.kubernetes.io/name: pisa-remote-implementer
+        pisa.runtime/actor-id: remote-implementer
         pisa.runtime/isolation: kata
+        pisa.runtime/role: actor
       annotations:
         pisa.dev/deploy-revision: __PISA_DEPLOY_REVISION__
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    pisa.runtime/role: actor
+                topologyKey: kubernetes.io/hostname
       automountServiceAccountToken: false
       enableServiceLinks: false
       nodeSelector:
@@ -176,16 +204,16 @@ spec:
             - packages/remote-actor/src/remote-actor-cli.ts
           env:
             - name: PISA_ACTOR_ID
-              value: remote-actor-1
+              value: remote-implementer
             - name: PISA_ACTOR_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: pisa-actor-capabilities
+                  name: pisa-actor-implementer-capabilities
                   key: actor-token
             - name: PISA_JOB_TOKEN_SHA256
               valueFrom:
                 secretKeyRef:
-                  name: pisa-actor-capabilities
+                  name: pisa-actor-implementer-capabilities
                   key: actor-job-token-sha256
             - name: PISA_BROKER_URL
               value: http://pisa-model-relay.pi-substrate.svc.cluster.local:8080
@@ -201,14 +229,14 @@ spec:
               port: http
             periodSeconds: 3
             timeoutSeconds: 1
-            failureThreshold: 60
+            failureThreshold: 100
           resources:
             requests:
               cpu: 250m
               memory: 512Mi
             limits:
-              cpu: "2"
-              memory: 2Gi
+              cpu: "1"
+              memory: 1Gi
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -233,12 +261,136 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: pisa-remote-actor
+  name: pisa-remote-implementer
   namespace: pi-substrate
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: pisa-remote-actor
+    app.kubernetes.io/name: pisa-remote-implementer
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pisa-remote-reviewer
+  namespace: pi-substrate
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-remote-reviewer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pisa-remote-reviewer
+        pisa.runtime/actor-id: remote-reviewer
+        pisa.runtime/isolation: kata
+        pisa.runtime/role: actor
+      annotations:
+        pisa.dev/deploy-revision: __PISA_DEPLOY_REVISION__
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    pisa.runtime/role: actor
+                topologyKey: kubernetes.io/hostname
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      nodeSelector:
+        agentpool: sandbox
+      runtimeClassName: kata-vm-isolation
+      serviceAccountName: pisa-remote-actor
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: actor
+          image: __PISA_HARNESS_IMAGE__
+          imagePullPolicy: Always
+          command:
+            - node
+            - --import
+            - tsx
+            - packages/remote-actor/src/remote-actor-cli.ts
+          env:
+            - name: PISA_ACTOR_ID
+              value: remote-reviewer
+            - name: PISA_ACTOR_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-actor-reviewer-capabilities
+                  key: actor-token
+            - name: PISA_JOB_TOKEN_SHA256
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-actor-reviewer-capabilities
+                  key: actor-job-token-sha256
+            - name: PISA_BROKER_URL
+              value: http://pisa-model-relay.pi-substrate.svc.cluster.local:8080
+            - name: PISA_WORK_ROOT
+              value: /workspace
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 3
+            timeoutSeconds: 1
+            failureThreshold: 100
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 1000
+            runAsUser: 1000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: workspace
+          emptyDir:
+            sizeLimit: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pisa-remote-reviewer
+  namespace: pi-substrate
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pisa-remote-reviewer
   ports:
     - name: http
       port: 8080
@@ -253,7 +405,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: pisa-remote-actor
+      pisa.runtime/role: actor
   policyTypes:
     - Ingress
     - Egress
@@ -261,7 +413,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: pisa-model-relay
+              pisa.runtime/role: relay
       ports:
         - port: 8080
           protocol: TCP
@@ -269,7 +421,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: pisa-model-relay
+              pisa.runtime/role: relay
       ports:
         - port: 8080
           protocol: TCP
@@ -309,14 +461,14 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: pisa-model-relay
+      pisa.runtime/role: relay
   policyTypes:
     - Egress
   egress:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: pisa-remote-actor
+              pisa.runtime/role: actor
       ports:
         - port: 8080
           protocol: TCP

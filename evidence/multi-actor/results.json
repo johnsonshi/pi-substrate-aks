@@ -1,0 +1,51 @@
+{
+  "image": "pisasubstrate84acr.azurecr.io/pisa-harness@sha256:437eef6199f18fc3b30e4a972e38156315f0cd53e31de5c9607bbc2aa64e48c9",
+  "sourceRevision": "f2d18905d27bb51e363b8de3b6b46dc7eef35186",
+  "concurrency": {
+    "relayActiveJobsObserved": 2,
+    "overlapMs": 19887
+  },
+  "actors": [
+    {
+      "actorId": "remote-implementer",
+      "role": "implementer",
+      "attempts": 1,
+      "patchSha256": "8fa461ca9d6b258dc78c4eda567a8d49623747385c11e6e6b182561f9c2b6b15",
+      "changedPaths": [
+        "multiply.js",
+        "multiply.test.js"
+      ],
+      "testGate": "PASS"
+    },
+    {
+      "actorId": "remote-reviewer",
+      "role": "reviewer-tester",
+      "attempts": 1,
+      "patchSha256": "cf5050b0043319f81b3d269906a3d33fb7edb9cf4ad9900c59d08f4544ed5898",
+      "changedPaths": [
+        "math.review.test.js"
+      ],
+      "testGate": "PASS"
+    }
+  ],
+  "combinedPatch": {
+    "sha256": "45ac08cfcd80623ecfd375948ec79a44817ba4bd7aef1e5a63136fecfd37ecc7",
+    "changedPaths": [
+      "math.review.test.js",
+      "multiply.js",
+      "multiply.test.js"
+    ],
+    "trustedReplay": "PASS",
+    "trustedSandboxedTest": "PASS",
+    "trustedCommit": "PASS"
+  },
+  "isolation": {
+    "runtimeClass": "kata-vm-isolation",
+    "serviceAccountToken": false,
+    "serviceExposure": "ClusterIP-only",
+    "actorToActorNetwork": "blocked",
+    "actorCapabilityCannotSubmitJob": "PASS",
+    "distinctSandboxNodes": 1,
+    "externalCredentialsInActors": "NONE"
+  }
+}

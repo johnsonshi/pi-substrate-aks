@@ -7,10 +7,12 @@ machine.
 The local credential broker is proven against the authenticated GitHub Copilot
 SDK, and constrained Pi SDK actors have completed real read, edit, and test
 tasks both locally and in an AKS Kata guest. Trusted archive/patch transport and
-the pinned upstream Agent Substrate lifecycle are also proven. Multi-actor and
-remaining runtime-matrix work remains in progress. See [STATUS.md](STATUS.md) for verified capabilities,
+the pinned upstream Agent Substrate lifecycle are also proven. Two isolated
+Kata actors have completed concurrent implementer and reviewer/test tasks
+through one trusted local Copilot bridge. See [STATUS.md](STATUS.md) for verified capabilities,
 [DESIGN.md](DESIGN.md) for the authoritative design, and
 [docs/LAB_NOTES.md](docs/LAB_NOTES.md) for the append-only experiment record.
+The sanitized proof index is [evidence/README.md](evidence/README.md).
 
 ## Security boundary
 
@@ -41,8 +43,39 @@ tool-free SDK session using the already logged-in local user, and requires the
 model to return `PISA_COPILOT_OK`. No GitHub token is accepted by the broker API
 or printed by the test.
 
-AKS commands will be added only after they are proven against the dedicated POC
-resource group.
+## Reproducible golden path
+
+Run from this repository on the trusted workstation. The real model smokes use
+the existing authenticated local Copilot session; no token argument or copied
+credential is used.
+
+```bash
+./scripts/preflight.sh
+npm ci --ignore-scripts
+npm run typecheck
+npm test
+npm audit --omit=dev
+npm run smoke:copilot
+npm run smoke:pi-copilot
+npm run smoke:transport:local
+
+make aks-provision
+make aks-runtime-probes
+make aks-substrate-preflight  # expected: PISA_SUBSTRATE_AKS_PREFLIGHT_BLOCKED
+make aks-agent-sandbox
+make aks-harness-image
+npm run smoke:remote-actor
+make aks-multi-actor
+make security
+make aks-verify
+```
+
+Run the pinned upstream kind lifecycle separately with the exact steps in
+[deploy/substrate/README.md](deploy/substrate/README.md). The final live
+topology is the two-actor deployment; run `make aks-multi-actor` again after any
+experiment that restores the legacy single actor. Working Azure resources are
+left running. The exact guarded resource-group teardown is documented in
+[deploy/aks/README.md](deploy/aks/README.md#teardown).
 
 ## Local broker
 
@@ -282,6 +315,39 @@ The digest and sanitized result are in
 The deployed actor remains fail closed after the smoke exits because the local
 bridge and broker are gone.
 
+## Concurrent implementer and reviewer/tester
+
+The multi-actor path keeps one trusted local broker and bridge while assigning
+each remote actor a separate model capability, downstream job-delivery
+capability, Deployment, ClusterIP Service, Kata workspace, and one-job process:
+
+```bash
+make aks-harness-image
+make aks-multi-actor
+```
+
+Both actors receive the same committed archive concurrently. The implementer
+adds a new multiplication function and tests; the reviewer/tester adds
+independent edge-case tests for the existing addition function. The relay
+accepts only configured actor IDs, maps each ID to a fixed cluster-local target,
+never accepts a caller-provided URL, and refuses downstream redirects. Success
+requires the relay to observe two active jobs at once.
+
+Each returned patch is independently replayed and validated. The trusted
+orchestrator then combines the disjoint patches against the original revision,
+re-exports one combined patch, runs the exact merged tree in the no-network
+test container, and commits only the prevalidated index. Cilium blocks direct
+traffic in both directions between actors. The live proof completed on the
+existing one-node Kata pool and prints:
+
+```text
+PISA_MULTI_ACTOR_OK
+```
+
+Sanitized structured results are in
+[experiments/012-multi-actor/RESULTS.md](experiments/012-multi-actor/RESULTS.md)
+and `evidence/multi-actor/`.
+
 ## Security acceptance
 
 The security gate combines deterministic policy tests with a direct live-actor
@@ -295,15 +361,18 @@ The local suite makes an adversarial fake model follow prompt-injection text
 that requests outside/Git reads, an outside write, and a destructive command.
 All actions must be rejected without disclosing the operator canary or changing
 protected files. The same suite covers actor/session identity, relay
-authentication, path/symlink confinement, request bounds, and process-group
-termination.
+authentication, path/symlink confinement, request bounds, concurrent actor
+routing, and process-group termination.
 
 The live probe verifies the deployed workload still uses Kata, has no
 service-account token or external credential-related environment names, cannot
-reach the Kubernetes API, Azure IMDS, or public internet, and remains behind
-ClusterIP-only Services with the expected split capability key names. It
-inspects names and booleans only, never capability values or environment
-values. See
+reach the Kubernetes API, Azure IMDS, its node-local kubelet endpoint, or public
+internet, and remains behind ClusterIP-only Services with the expected split
+capability key names. It verifies the Cilium actor policy explicitly denies
+host, remote-node, and kube-apiserver entities. In the two-actor topology it
+also verifies both actor identities and bidirectional actor-to-actor network
+denial. It inspects names and booleans only, never capability values or
+environment values. See
 [experiments/010-security-acceptance/RESULTS.md](experiments/010-security-acceptance/RESULTS.md).
 
 Run the local portion without AKS:

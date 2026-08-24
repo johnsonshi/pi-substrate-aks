@@ -27,11 +27,11 @@ tool and filesystem policy, not model compliance.
 
 ## Local identity and containment suite
 
-The consolidated local suite ran 16 security-relevant cases covering:
+The consolidated local suite ran 18 security-relevant cases covering:
 
 - broker actor authentication and cross-actor session ownership;
 - relay actor, tunnel, and trusted-job authentication;
-- relay private-target and disconnected-bridge failure;
+- relay private-target, redirect refusal, and disconnected-bridge failure;
 - bounded malformed and escaped requests;
 - traversal, canonical symlink, and Git metadata denial;
 - allowlisted process-group timeout and hard termination;
@@ -49,7 +49,10 @@ values, environment values, or credential files.
 - Selected Copilot/Azure home paths, host mount, and `/dev/kvm` were absent.
 - TCP attempts to the Kubernetes API, Azure IMDS, and public internet were
   blocked.
+- The node-local kubelet endpoint was blocked, and the valid Cilium actor
+  policy denied host, remote-node, and kube-apiserver entities.
 - Relay and actor Services remained `ClusterIP`.
+- Direct actor-to-actor Service connectivity was blocked in both directions.
 - Actor and relay Secret key names exactly matched the split POC capability
   design. Secret values were never read.
 

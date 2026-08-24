@@ -570,3 +570,103 @@ full-state lifecycle remains proven only on kind and blocked on AKS.
 - `experiments/011-agent-sandbox-aks/RESULTS.md`
 - `evidence/agent-sandbox/lifecycle.txt`
 - `deploy/agent-sandbox/`
+
+## D-014: Route jobs by actor identity and merge only validated patches
+
+**Status:** accepted
+
+### Context
+
+Two concurrent actors need separate workspaces and downstream capabilities
+while sharing the trusted local Copilot broker. Allowing a trusted request to
+provide an arbitrary target URL would turn the relay into an SSRF primitive.
+Applying parallel patches directly would also skip a coherent merged-tree
+acceptance gate.
+
+### Options considered
+
+- Deploy one relay and bridge per actor.
+- Let callers provide actor Service URLs and delivery tokens.
+- Use one multiplexed relay with a fixed actor map, then independently validate
+  and safely combine disjoint patches.
+
+### Decision
+
+Use one relay and bridge with actor-keyed model and job routes. Each actor ID
+maps to one configured cluster-local URL and one distinct delivery capability;
+unknown IDs fail closed and the caller never controls the URL. Give each actor
+its own Kata Deployment, Service, verifier-only Secret, and workspace. Validate
+each returned patch against the common source, combine disjoint patches in a
+fresh actor-style Git workspace, export one combined patch, and run the trusted
+container test before commit.
+
+### Rationale
+
+Multiplexing preserves one local credential boundary while keeping remote
+actor identities and delivery capabilities separate. Fixed targets prevent
+open proxy behavior. Re-exporting from a fresh merge workspace gives the final
+tree the same source/path/content checks as an individual actor result.
+
+### Consequences
+
+The trusted job-client capability can select any configured actor because it
+belongs to the trusted orchestrator; actor model capabilities cannot. Parallel
+patches must have disjoint paths in this POC. Cilium blocks actor-to-actor
+traffic, so coordination occurs only through trusted archive/patch transport.
+The measured one-node Kata pool can host both actors, but this is a capacity
+result rather than an availability design.
+
+### Evidence
+
+- `experiments/012-multi-actor/RESULTS.md`
+- `evidence/multi-actor/results.json`
+- `packages/model-relay/src/relay-server.ts`
+- `deploy/aks/multi-actor.yaml`
+
+## D-015: Reject relay redirects and explicitly deny actor-to-node traffic
+
+**Status:** accepted
+
+### Context
+
+Actor job targets are fixed cluster-local URLs, but standard Fetch behavior
+follows redirects and can preserve a POST body across `307` or `308`. Standard
+Kubernetes NetworkPolicy also does not guarantee denial of traffic between a
+pod and its local node. Either behavior weakens the claimed fixed-destination,
+relay/DNS-only boundary.
+
+### Options considered
+
+- Trust actor endpoints not to redirect and describe node traffic as a
+  residual limitation.
+- Revalidate every redirect destination and accept selected node endpoints.
+- Reject redirects completely and add a Cilium entity-level deny for host,
+  remote-node, and kube-apiserver traffic.
+
+### Decision
+
+Set relay job Fetch requests to `redirect: "error"` and test that a redirect
+target receives no request. Keep the Kubernetes relay/DNS allowlist and add a
+Cilium `egressDeny` policy selecting actor endpoints for `host`,
+`remote-node`, and `kube-apiserver`. Require the policy to report valid and
+probe the node-local kubelet endpoint in live security acceptance.
+
+### Rationale
+
+The relay has no reason to follow redirects because every legitimate actor URL
+is known at deployment time. Cilium's entity policy covers the node exception
+that the portable NetworkPolicy API intentionally leaves open.
+
+### Consequences
+
+Actor Services and DNS must remain Cilium-managed endpoints so they retain
+their explicit allow paths. The POC now depends on the Cilium CRD in addition
+to standard NetworkPolicy. The live verifier checks policy validity and
+node-local denial without recording node addresses.
+
+### Evidence
+
+- `tests/integration/model-relay.test.ts`
+- `deploy/aks/multi-actor.yaml`
+- `scripts/verify-remote-security.ts`
+- `evidence/security/acceptance.txt`

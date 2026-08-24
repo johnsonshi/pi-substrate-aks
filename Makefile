@@ -1,4 +1,4 @@
-.PHONY: aks-agent-sandbox aks-agent-sandbox-install aks-agent-sandbox-teardown aks-harness-image aks-provision aks-runtime-probe-image aks-runtime-probes aks-substrate-preflight aks-teardown aks-verify doctor security test
+.PHONY: aks-agent-sandbox aks-agent-sandbox-install aks-agent-sandbox-teardown aks-harness-image aks-multi-actor aks-provision aks-runtime-probe-image aks-runtime-probes aks-substrate-preflight aks-teardown aks-verify doctor security test
 
 doctor:
 	./scripts/preflight.sh
@@ -35,6 +35,9 @@ aks-substrate-preflight:
 
 aks-harness-image:
 	./scripts/build-harness-image.sh
+
+aks-multi-actor:
+	npm run smoke:multi-actor
 
 aks-teardown:
 	./scripts/aks-teardown.sh

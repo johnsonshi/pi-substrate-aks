@@ -79,7 +79,20 @@ export class TrustedBridge {
       return;
     }
     await new Promise<void>((resolve) => {
-      socket.once("close", resolve);
+      let closed = false;
+      const finish = (): void => {
+        if (closed) {
+          return;
+        }
+        closed = true;
+        clearTimeout(timeout);
+        resolve();
+      };
+      const timeout = setTimeout(() => {
+        socket.terminate();
+        finish();
+      }, 5_000);
+      socket.once("close", finish);
       socket.close(1000, "bridge closing");
     });
   }

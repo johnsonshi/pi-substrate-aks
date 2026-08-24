@@ -494,3 +494,60 @@ The pinned controller managed a Kata Sandbox through suspend and resume.
 Suspension released the pod; resume created a new pod and process while
 restoring the PVC marker. Memory and Pi in-memory session state were not
 preserved.
+
+## v12 - Concurrent implementer and reviewer/tester
+
+```text
+Trusted workstation
+  +-- one loopback Copilot broker
+  |     +-- local capability: remote-implementer
+  |     `-- local capability: remote-reviewer
+  +-- one trusted WebSocket bridge (multiplexed by actor ID)
+  +-- one trusted job-client capability
+  `-- source/patch orchestrator
+        +-- common committed archive
+        +-- validate implementer patch independently
+        +-- validate reviewer patch independently
+        `-- fresh merge -> export -> replay -> no-network test -> commit
+                         |
+                         v
+AKS system pool: private relay
+  +-- fixed remote-implementer target + delivery capability
+  +-- fixed remote-reviewer target + delivery capability
+  `-- no caller-controlled target URL
+          |                              |
+          v                              v
+AKS Kata actor                     AKS Kata actor
+remote-implementer                 remote-reviewer
+  +-- isolated emptyDir              +-- isolated emptyDir
+  +-- verifier-only Secret           +-- verifier-only Secret
+  +-- one job, then exit              +-- one job, then exit
+  +-- relay/DNS network only          +-- relay/DNS network only
+  `-- host/node/API denied            `-- host/node/API denied
+          X------------------------------X
+                 actor traffic denied
+```
+
+### Reason for change
+
+The first remote actor proved credential-free coding but not concurrent actor
+orchestration. Implementer and reviewer/tester roles now need independent
+identity, workspace, and acceptance while sharing one trusted model boundary.
+
+### Security implications
+
+Actor IDs select only preconfigured cluster-local relay targets. Delivery
+capabilities are distinct, actor Secrets retain only their own verifier, and
+model capabilities cannot authorize job submission. Cilium blocks direct
+actor-to-actor Service traffic and explicitly denies host, remote-node, and
+kube-apiserver entities. The relay refuses downstream redirects. Parallel
+results become trusted only after independent replay and an exact combined-tree
+container test.
+
+### Result
+
+The relay observed two active jobs with `19,887 ms` overlap. Both actors passed
+their test gates on the first attempt, their disjoint patches merged and tested,
+and both Kata guests fit on the existing single sandbox node. The POC now meets
+the two-concurrent-actor objective without moving Copilot authentication into
+AKS.

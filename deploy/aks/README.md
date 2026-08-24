@@ -168,6 +168,30 @@ make aks-runtime-probes
 This recovery applies only to the disposable `sandbox` pool in the dedicated
 POC cluster.
 
+## Two concurrent actors
+
+After building the harness image, deploy and exercise the actor-keyed topology:
+
+```bash
+make aks-multi-actor
+```
+
+The manifest defines separate implementer and reviewer/tester Kata
+Deployments, Services, and actor Secrets. The relay uses fixed per-actor
+cluster-local targets and downstream delivery capabilities while one trusted
+bridge multiplexes both model identities. Cilium allows only relay/DNS actor
+traffic, explicitly denies host/remote-node/kube-apiserver entities, and denies
+actor-to-actor connections. The relay rejects redirects from an actor target,
+so a configured endpoint cannot select a second destination.
+
+The smoke requires two simultaneous active relay jobs, independently validates
+both patches, combines their disjoint changes against the original revision,
+tests the exact merged tree in the trusted no-network container, and writes
+sanitized evidence under `evidence/multi-actor/`. The existing
+`Standard_D4s_v3` Kata node hosted both guests in the measured run; scaling the
+pool was unnecessary. The final source-matched harness image was
+`pisasubstrate84acr.azurecr.io/pisa-harness@sha256:437eef6199f18fc3b30e4a972e38156315f0cd53e31de5c9607bbc2aa64e48c9`.
+
 ## Teardown
 
 The working POC is intentionally left running. The only supported teardown

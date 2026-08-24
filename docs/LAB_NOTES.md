@@ -883,3 +883,180 @@ not memory/Pi-session restore and not Agent Substrate full snapshots.
 Accept the controller only on the dedicated POC cluster because its watch and
 RBAC scope is cluster-wide. Keep the probe suspended. Reuse the established
 two-runtime pattern for concurrent implementer/reviewer actors.
+
+## 2026-08-24 05:33 PDT - Two concurrent Kata Pi actors
+
+### Goal
+
+Run isolated implementer and reviewer/tester actors concurrently through one
+local Copilot broker, then merge only independently validated patches on the
+trusted workstation.
+
+### Hypothesis
+
+The existing relay and bridge can multiplex two actor identities if trusted job
+routing uses a fixed per-actor target/capability map. One
+`Standard_D4s_v3` Kata node may have enough capacity for both guests without
+weakening placement or isolation.
+
+### Environment
+
+- local git baseline: `737a0d7`
+- AKS/context: `pisa-aks`
+- actor runtime: two `kata-vm-isolation` pods
+- sandbox pool: one `Standard_D4s_v3` node
+- initial live harness digest:
+  `sha256:d500275bd2e4580ec2004cfad8aba6a29b9ac3366e818923359c5dd74e68d353`
+- model: authenticated local GitHub Copilot SDK through one loopback broker
+
+### Actions
+
+Changed the relay job proxy from one static target to a map keyed by validated
+actor IDs. Added fixed actor-specific cluster-local URLs and delivery
+capabilities, retained the legacy route only for a single configured target,
+and exposed only an active-job count in health. Added a deterministic
+two-target integration test that holds both targets active simultaneously and
+checks downstream bearer separation, unknown actors, and ambiguous legacy
+routing.
+
+Created implementer and reviewer Deployments, Services, and verifier-only
+Secrets. Both use Kata, non-root execution, read-only roots, dropped
+capabilities, no service-account token, ephemeral workspaces, and `Recreate`.
+A common Cilium policy permits only relay/DNS paths and blocks actor-to-actor
+traffic.
+
+Both actors received the same committed fixture. The implementer added
+`multiply.js` and `multiply.test.js`; the reviewer/tester added only
+`math.review.test.js`. The relay observed two active job proxies. Each actor
+replayed and tested its own final patch. The trusted side independently
+validated both, combined the disjoint patches against the original revision,
+re-exported and replayed the combined patch, tested it in the no-network
+container, and committed only the validated index.
+
+The smoke printed `PISA_MULTI_ACTOR_OK`, but the local process remained alive
+after success because trusted cleanup had no final bound and WebSocket close
+could wait indefinitely. Stopped that completed local process, added a
+five-second terminating WebSocket close, bounded broker/bridge cleanup, and
+made successful smoke exit explicit. No remote workload or credential boundary
+changed.
+
+### Result
+
+**PASS.** Relay active jobs reached `2` and request intervals overlapped for
+`19,658 ms`. Both actors passed on their first attempt. Their three changed
+paths were disjoint and the trusted combined test/commit passed.
+
+Both Kata guests ran concurrently on the one existing sandbox node. Both
+Services were ClusterIP, service-account automount was false, actor-to-actor
+TCP was blocked in both directions, and actor model capability could not invoke
+the trusted job route. No external credential entered either actor.
+
+### Evidence
+
+- `experiments/012-multi-actor/RESULTS.md`
+- `evidence/multi-actor/remote-concurrency.txt`
+- `evidence/multi-actor/results.json`
+- `deploy/aks/multi-actor.yaml`
+- `scripts/smoke-multi-actor.ts`
+
+### Interpretation
+
+Concurrency does not require duplicating the trusted model credential or
+placing it in Kubernetes. Actor identity can multiplex one tunnel while job
+delivery remains separately scoped. Independent patch validation plus a fresh
+combined replay avoids treating parallel actor output as trusted merely
+because paths do not overlap.
+
+### Decision / next experiment
+
+Keep the single-node pool because measured capacity was sufficient. Make this
+the final remote topology, rerun the full security gate against both actors,
+and complete the reproducible golden path.
+
+## 2026-08-24 06:12 PDT - Final multi-actor hardening and acceptance
+
+### Goal
+
+Rebuild the harness from the final source, prove the two-actor smoke exits
+normally, review the new routing/cleanup boundary, and rerun live security
+acceptance.
+
+### Hypothesis
+
+Bounded bridge shutdown fixes the original post-success hang without changing
+remote behavior. Explicit redirect refusal and Cilium host-entity denial close
+the remaining fixed-target and node-egress gaps while preserving relay/DNS
+connectivity.
+
+### Environment
+
+- AKS/context: `pisa-aks`
+- actor runtime: two `kata-vm-isolation` pods
+- sandbox pool: one `Standard_D4s_v3` node
+- final harness digest:
+  `sha256:437eef6199f18fc3b30e4a972e38156315f0cd53e31de5c9607bbc2aa64e48c9`
+- final source archive revision:
+  `f2d18905d27bb51e363b8de3b6b46dc7eef35186`
+- model: authenticated local GitHub Copilot SDK through one loopback broker
+
+### Actions
+
+Built digest
+`sha256:912d1fb35f03466e36718b65dc945e3e05fd39d7f7bf6693b0381108fdd1b187`
+after the initial cleanup fix and reran the two-actor proof. It printed
+`PISA_MULTI_ACTOR_OK` and exited normally, proving the WebSocket shutdown fix.
+
+A focused implementation review then found three additional bounded-lifecycle
+issues and one network-policy gap: actor-target redirects were followed,
+port-forward startup failure could leave a child process, the concurrent
+regression test could wait indefinitely, and portable NetworkPolicy does not
+cover local-node traffic. Changed the relay to reject redirects, added a
+negative redirect test, made the concurrency test finite, added terminating
+port-forward cleanup, and applied a Cilium deny for host, remote-node, and
+kube-apiserver entities. Extended the live verifier to require a valid Cilium
+policy and blocked node-local kubelet connectivity.
+
+Built the source-matched final image. Its first smoke failed closed because the
+implementer exhausted three model acceptance attempts; no patch passed the
+actor gate or reached trusted commit. Tightened the task wording and increased
+the finite retry budget to five. The next run passed with one attempt per actor,
+observed two active jobs and `19,887 ms` overlap, validated and merged the three
+disjoint paths, printed `PISA_MULTI_ACTOR_OK`, and exited normally.
+
+The final live verifier confirmed both actors could still reach the relay while
+Kubernetes API, IMDS, node-local kubelet, public internet, and peer actor
+traffic were blocked. The Cilium policy reported `Valid=True`.
+
+### Result
+
+**PASS.** The final image, redirect refusal, cleanup bounds, Cilium host/entity
+deny, two-actor concurrency, actor-side gates, trusted combined replay/test,
+and normal smoke-process exit are all proven together.
+
+The consolidated security suite now has 18 local cases and the live two-actor
+probe. No external credential entered either actor, and no credential value,
+kubeconfig content, node address, subscription identifier, or tenant
+identifier was recorded.
+
+### Evidence
+
+- `evidence/multi-actor/remote-concurrency.txt`
+- `evidence/multi-actor/results.json`
+- `evidence/security/acceptance.txt`
+- `experiments/012-multi-actor/RESULTS.md`
+- `tests/integration/model-relay.test.ts`
+- `deploy/aks/multi-actor.yaml`
+
+### Interpretation
+
+Fail-closed acceptance retries are operational resilience, not a relaxation:
+every attempt still receives a fresh one-job actor process and must pass the
+same exact-final-patch replay/test gate. Fixed URLs require redirect refusal,
+and relay/DNS-only claims on Cilium require an explicit entity deny beyond
+portable NetworkPolicy.
+
+### Decision / next experiment
+
+Accept this as the final multi-actor topology. Preserve the one-node Kata pool,
+leave the working POC running, and complete only final repository validation,
+commit/push, and documentation consistency checks.

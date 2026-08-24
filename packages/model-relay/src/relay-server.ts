@@ -28,8 +28,15 @@ export interface RelayServerOptions {
   tunnelToken: string;
   jobProxy?: {
     clientToken: string;
-    targetToken: string;
-    targetUrl: URL;
+    targets: Readonly<
+      Record<
+        string,
+        {
+          targetToken: string;
+          targetUrl: URL;
+        }
+      >
+    >;
     maxRequestBytes?: number;
     maxResponseBytes?: number;
     requestTimeoutMs?: number;
@@ -45,8 +52,13 @@ export class RelayServer {
   readonly #jobAuthorizer: ActorTokenAuthorizer | undefined;
   readonly #jobProxy:
     | {
-        targetUrl: URL;
-        targetToken: string;
+        targets: ReadonlyMap<
+          string,
+          {
+            targetUrl: URL;
+            targetToken: string;
+          }
+        >;
         maxRequestBytes: number;
         maxResponseBytes: number;
         requestTimeoutMs: number;
@@ -60,6 +72,7 @@ export class RelayServer {
   readonly #pending = new Map<string, PendingRequest>();
   #bridge: WebSocket | undefined;
   #activeRequests = 0;
+  #activeJobs = 0;
   #lastBridgeFailure: string | undefined;
 
   constructor(options: RelayServerOptions) {
@@ -71,16 +84,39 @@ export class RelayServer {
       this.#jobAuthorizer = undefined;
       this.#jobProxy = undefined;
     } else {
-      assertPrivateJobTarget(options.jobProxy.targetUrl);
-      if (options.jobProxy.targetToken.length < 32) {
-        throw new Error("Actor job token must contain at least 32 characters");
+      const targets = new Map<
+        string,
+        {
+          targetUrl: URL;
+          targetToken: string;
+        }
+      >();
+      for (const [actorId, target] of Object.entries(
+        options.jobProxy.targets,
+      )) {
+        if (
+          !ACTOR_ID_PATTERN.test(actorId) ||
+          !(actorId in options.actorTokens)
+        ) {
+          throw new Error("Relay job target actor ID is invalid");
+        }
+        assertPrivateJobTarget(target.targetUrl);
+        if (target.targetToken.length < 32) {
+          throw new Error("Actor job token must contain at least 32 characters");
+        }
+        targets.set(actorId, {
+          targetUrl: new URL(target.targetUrl),
+          targetToken: target.targetToken,
+        });
+      }
+      if (targets.size === 0) {
+        throw new Error("Relay job proxy requires at least one target");
       }
       this.#jobAuthorizer = new ActorTokenAuthorizer({
         "trusted-job-client": options.jobProxy.clientToken,
       });
       this.#jobProxy = {
-        targetUrl: options.jobProxy.targetUrl,
-        targetToken: options.jobProxy.targetToken,
+        targets,
         maxRequestBytes:
           options.jobProxy.maxRequestBytes ?? 12 * 1024 * 1024,
         maxResponseBytes:
@@ -233,12 +269,13 @@ export class RelayServer {
         sendJson(response, 200, {
           status: "ok",
           bridgeConnected: this.bridgeConnected,
+          activeJobs: this.#activeJobs,
         });
         return;
       }
 
-      if (request.method === "POST" && url.pathname === "/v1/actor/run") {
-        await this.#handleJobProxy(request, response);
+      if (request.method === "POST" && isJobProxyPath(url.pathname)) {
+        await this.#handleJobProxy(request, response, url.pathname);
         return;
       }
 
@@ -304,6 +341,7 @@ export class RelayServer {
   async #handleJobProxy(
     request: IncomingMessage,
     response: ServerResponse,
+    pathname: string,
   ): Promise<void> {
     const jobProxy = this.#jobProxy;
     if (
@@ -313,17 +351,27 @@ export class RelayServer {
     ) {
       throw new RelayHttpError(401, "unauthorized");
     }
+    const actorId = jobActorId(pathname, jobProxy.targets);
+    if (actorId === undefined) {
+      throw new RelayHttpError(404, "not_found");
+    }
+    const target = jobProxy.targets.get(actorId);
+    if (target === undefined) {
+      throw new RelayHttpError(404, "not_found");
+    }
     const body = await readBody(request, jobProxy.maxRequestBytes);
     const controller = new AbortController();
     const timeout = setTimeout(
       () => controller.abort(new Error("Actor job proxy timed out")),
       jobProxy.requestTimeoutMs,
     );
+    this.#activeJobs += 1;
     try {
-      const targetResponse = await fetch(jobProxy.targetUrl, {
+      const targetResponse = await fetch(target.targetUrl, {
         method: "POST",
+        redirect: "error",
         headers: {
-          authorization: `Bearer ${jobProxy.targetToken}`,
+          authorization: `Bearer ${target.targetToken}`,
           "content-type": "application/json",
         },
         body,
@@ -339,6 +387,7 @@ export class RelayServer {
       throw new RelayHttpError(502, "job_proxy_error");
     } finally {
       clearTimeout(timeout);
+      this.#activeJobs -= 1;
     }
   }
 
@@ -416,6 +465,27 @@ async function readBoundedFetchResponse(
     throw new Error("Actor response exceeds relay limit");
   }
   return body;
+}
+
+function isJobProxyPath(pathname: string): boolean {
+  return (
+    pathname === "/v1/actor/run" ||
+    /^\/v1\/actor\/[^/]+\/run$/.test(pathname)
+  );
+}
+
+function jobActorId(
+  pathname: string,
+  targets: ReadonlyMap<string, unknown>,
+): string | undefined {
+  if (pathname === "/v1/actor/run") {
+    return targets.size === 1 ? targets.keys().next().value : undefined;
+  }
+  const match = /^\/v1\/actor\/([^/]+)\/run$/.exec(pathname);
+  const actorId = match?.[1];
+  return actorId !== undefined && ACTOR_ID_PATTERN.test(actorId)
+    ? actorId
+    : undefined;
 }
 
 function assertPrivateJobTarget(url: URL): void {

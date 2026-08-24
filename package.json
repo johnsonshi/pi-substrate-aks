@@ -16,6 +16,7 @@
     "security:prompt-injection": "node --import tsx --test tests/security/prompt-injection.test.ts",
     "security:remote": "tsx scripts/verify-remote-security.ts",
     "smoke:copilot": "tsx scripts/smoke-copilot.ts",
+    "smoke:multi-actor": "tsx scripts/smoke-multi-actor.ts",
     "smoke:pi-copilot": "tsx scripts/smoke-pi-copilot.ts",
     "smoke:remote-actor": "tsx scripts/smoke-remote-actor.ts",
     "smoke:transport:local": "node --import tsx --test tests/integration/source-transport.test.ts",

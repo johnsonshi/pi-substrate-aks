@@ -32,7 +32,7 @@ Last updated: 2026-08-24
 | AKS Kata-capable node pool | PASS | Azure Linux `KataVmIsolation` pool, RuntimeClass, and restricted runtime probe ready |
 | AKS isolated actor runtime | PASS | Real Pi edit/test task ran in `kata-vm-isolation`; `experiments/008-remote-actor/RESULTS.md` |
 | Actor credential and service-account absence on AKS | PASS | Remote actor has no GitHub, Copilot, Azure, kubeconfig, or service-account credential; direct probes corroborate runtime state |
-| Actor Kubernetes API, IMDS, and public egress denial | PASS (policy + probe) | Actor egress allows only relay and DNS; direct Kata probe blocked API, IMDS, and public internet |
+| Actor Kubernetes API, IMDS, node-local, and public egress denial | PASS (policy + probe) | NetworkPolicy allows relay/DNS only; valid Cilium deny covers host, remote-node, and kube-apiserver entities; direct Kata probes were blocked |
 | Substrate microVM on AKS sandbox node (runc) | BLOCKED | `/dev/kvm` is not a usable character device; KVM API version `0` |
 | Substrate microVM inside AKS Kata | BLOCKED | No guest KVM; host-device placement could not create the Kata sandbox |
 | Agent Substrate control plane on AKS | BLOCKED | Managed API omits required PodCertificateRequest and ClusterTrustBundle resources; `experiments/009-substrate-aks/RESULTS.md` |
@@ -40,21 +40,22 @@ Last updated: 2026-08-24
 | OSS Agent Sandbox controller on AKS | PASS | Pinned `v0.5.6` controller runs under Restricted Pod Security; cluster-wide authority accepted only on the dedicated POC cluster |
 | OSS Agent Sandbox + AKS Kata | PASS | Controller created and managed a credential-free, deny-all `kata-vm-isolation` Sandbox |
 | Remote Pi actor | PASS | Digest-pinned Kata actor accepted a manifest archive, edited and tested `math.js`, and returned a locally validated patch |
-| Two concurrent Pi actors | PENDING | |
+| Two concurrent Pi actors | PASS | Relay observed two active jobs with 19.887 s overlap; isolated implementer and reviewer/tester patches were independently accepted and safely merged; `experiments/012-multi-actor/RESULTS.md` |
+| Actor-to-actor network isolation | PASS | Bidirectional actor Service connectivity was blocked while both actors retained relay/DNS access |
 | Workspace isolation | PASS | Canonical-path/tool policy plus a private Kata `emptyDir`; no trusted filesystem mount |
 | Substrate pause/resume | PASS (local kind) | Stock `onPause: Full` restored memory and DurableDir |
 | Substrate suspend/resume | PASS (local kind) | `onCommit: Data` and `onCommit: Full` semantics proven; `evidence/substrate-kind/lifecycle.txt` |
 | Remote Agent Sandbox workspace suspend/resume | PASS | `Suspended=True` released the Kata pod; a new pod/process restored the PVC marker |
 | Remote process/Pi session resume | NOT PRESERVED | Agent Sandbox resume cold-starts the process; Substrate-managed full-state resume on AKS remains blocked |
 | Prompt-injection fixture contained | PASS | Adversarial fake model attempted outside/Git reads, outside write, and destructive command; all failed with no canary disclosure or mutation |
-| Consolidated security acceptance | PASS | `make security` ran 16 local identity/containment cases and live Kata token/path/network/service probes; `experiments/010-security-acceptance/RESULTS.md` |
+| Consolidated security acceptance | PASS | `make security` ran 18 local identity/containment cases and live two-actor Kata token/path/network/service/policy probes; `experiments/010-security-acceptance/RESULTS.md` |
 | Local Copilot broker with fake backend | PASS | Four unit/integration cases in `tests/unit/copilot-broker.test.ts` |
 | Real Copilot SDK request using local login | PASS | `experiments/001-local-broker/RESULTS.md` |
 | Pi SDK actor with fake broker | PASS | `experiments/002-local-pi-actor/RESULTS.md` |
 | Real Pi coding task through local Copilot | PASS | Exact `PISA_PI_COPILOT_OK` smoke marker; `experiments/003-local-pi-copilot/RESULTS.md` |
-| Full local test and typecheck | PASS | 28 tests passed; `tsc --noEmit` passed after security acceptance |
+| Full local test and typecheck | PASS | 30 tests passed; `tsc --noEmit` passed after relay and multi-actor hardening |
 | Production dependency audit | PASS | Patched `@earendil-works/pi-*` `0.84.2`; `npm audit --omit=dev` reports zero advisories |
 | Trusted archive-in / binary patch-out transport | PASS | `experiments/004-source-transport/RESULTS.md`; seven transport integration cases |
-| In-cluster relay and trusted local bridge | PASS | Separate model/tunnel/job-client/job-delivery/broker capabilities, ClusterIP-only services, bounded proxying, and disconnect failure |
+| In-cluster relay and trusted local bridge | PASS | Actor-keyed target allowlist, redirect refusal, per-actor model/job-delivery/broker capabilities, shared tunnel/job-client capabilities, ClusterIP-only services, bounded proxying, and disconnect failure |
 | Remote patch acceptance gate | PASS | Remote service independently replays and tests the exact final patch; trusted tests run in a no-network container before commit |
 | Repo private and pushed | PASS | Bootstrap commit `3e1ef52` pushed; visibility reverified |

@@ -155,6 +155,26 @@ access that never leaves the local machine.
 - Adversarial tests need isolated adversarial artifacts too. A fixed canary
   filename made two otherwise independent test processes race; deriving the
   filename from each unique workspace restored safe parallel execution.
+- One local model credential can safely serve concurrent remote actors without
+  becoming a cluster credential. Multiplex identity over one authenticated
+  bridge, keep per-actor delivery capabilities and workspaces distinct, and
+  never accept a caller-provided target URL.
+- Parallel patches need a final-tree gate. Independently validate each patch,
+  combine only disjoint changes in a fresh baseline, re-export the combined
+  patch, and test that exact tree before a trusted commit.
+- The one-node `Standard_D4s_v3` Kata pool ran two actor guests concurrently;
+  the relay measured `19,887 ms` of request overlap. Capacity was sufficient
+  for the POC without adding a node.
+- Successful experiments can still expose harness defects after the marker is
+  printed. An unbounded WebSocket cleanup kept the local process alive; bounded
+  termination made completion itself reproducible, and the hardened rerun
+  exited normally.
+- A fixed target URL is insufficient if the HTTP client follows redirects.
+  Rejecting downstream redirects keeps the actor from selecting a second
+  destination for the trusted archive body.
+- Standard NetworkPolicy has node-traffic exceptions. A Cilium entity deny for
+  host, remote-node, and kube-apiserver closes that gap while retaining only
+  relay and DNS egress.
 
 ## Measurements to capture
 
