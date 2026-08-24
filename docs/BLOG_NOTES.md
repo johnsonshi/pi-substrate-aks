@@ -190,3 +190,26 @@ access that never leaves the local machine.
   an actor-scoped ephemeral token.
 - Negative tests showing actor A cannot use actor B's session and oversized
   input is rejected without being echoed.
+
+## Showcase framing
+
+- The strongest headline is not "Pi runs on AKS." It is "remote coding compute
+  does not need to become a credentialed developer workstation."
+- Tell the story through two lenses. The individual keeps login, review, and
+  source-control authority locally. The organization gets disposable workers,
+  narrow actor identity, enforced network/runtime boundaries, and a final
+  patch-acceptance gate.
+- Be explicit that the actor can consume the user's Copilot entitlement while
+  the bridge is connected, but never receives a GitHub-issued or Copilot token.
+  The custom relay capability delegates one application action, not the user's
+  external identity.
+- The two-actor result demonstrates composition, not scale: one implementer,
+  one reviewer/tester, isolated workspaces and capabilities, `19,887 ms` of
+  measured overlap, and one trusted final-tree gate.
+- The blocked Agent Substrate result strengthens the article. It shows why
+  runtime names and lifecycle claims matter: local kind proved Substrate
+  semantics, direct Kata proved AKS execution, and Agent Sandbox proved only
+  workspace continuity on AKS.
+- Keep the "cannot" table prominent. A credible agent-platform story includes
+  missing production controls, cold process restart, narrow workload support,
+  controller RBAC, denied public egress, and the absence of fleet-scale proof.

@@ -60,3 +60,4 @@ Last updated: 2026-08-24
 | In-cluster relay and trusted local bridge | PASS | Actor-keyed target allowlist, redirect refusal, per-actor model/job-delivery/broker capabilities, shared tunnel/job-client capabilities, ClusterIP-only services, bounded proxying, and disconnect failure |
 | Remote patch acceptance gate | PASS | Remote service independently replays and tests the exact final patch; trusted tests run in a no-network container before commit |
 | Repo private and pushed | PASS | Multi-actor milestone `0f0e517` pushed to `main`; visibility reverified as `PRIVATE` |
+| User/org harness showcase | PASS | `README.md` leads with the demonstrated user experience, organization control pattern, actor authority, runtime truth, and explicit non-claims |

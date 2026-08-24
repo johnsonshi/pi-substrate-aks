@@ -1104,3 +1104,46 @@ remains suspended with its PVC retained.
 Leave the working POC resources running. Use only the guarded
 `PISA_CONFIRM_TEARDOWN=rg-pi-substrate-aks make aks-teardown` command when
 teardown is intentionally requested.
+
+## 2026-08-24 12:06 PDT - Audience-first README handoff
+
+### Goal
+
+Make the repository useful to a reader deciding what the POC demonstrates,
+from both an individual developer and an organization-owned agent-harness
+perspective.
+
+### Actions
+
+Reworked `README.md` from a chronological implementation narrative into a
+showcase-first handoff. Added the measured result, user and organization value,
+trust and authority model, actor capability table, end-to-end acceptance flow,
+runtime compatibility truth, explicit non-claims, tiered reproduction path,
+guarded teardown command, repository map, and verified snapshot.
+
+Checked every local README link, ran `git diff --check`, and reran the full
+30-test suite.
+
+### Result
+
+**PASS.** The README now answers the critical questions before presenting
+implementation detail: what remote actors can do, what authority they do not
+have, how local Copilot authentication is used without delegation, what an
+organization can enforce in the harness, why the returned patch is still
+untrusted, and why direct Kata is not claimed as Agent Substrate on AKS.
+
+All local links resolve and all 30 tests pass.
+
+### Evidence
+
+- `README.md`
+- `STATUS.md`
+- `SECURITY.md`
+- full local test output
+
+### Decision
+
+Lead with the reusable authority-separation pattern and measured proof. Keep
+the detailed experiment chronology in `docs/LAB_NOTES.md` and
+`docs/ARCHITECTURE_EVOLUTION.md`, and keep blocked runtime rows visible as
+results rather than hiding them behind the working fallback.
