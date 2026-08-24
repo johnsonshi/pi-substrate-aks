@@ -1,0 +1,17 @@
+{
+  "name": "pi-substrate-aks",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "preflight": "./scripts/preflight.sh"
+  }
+}
+
