@@ -55,6 +55,13 @@ and recreates the two POC capability Secrets. This avoids Kubernetes
 server-side apply retaining revoked data keys and prevents old pods from
 continuing to use prior capabilities during rotation.
 
+The pinned Substrate control plane is not partially installed on AKS when its
+required certificate APIs are absent. This POC does not substitute static
+signing material or weaken worker permissions to force compatibility. The
+upstream gVisor WorkerPool's host path, mount propagation, AppArmor, and broad
+capability requirements are not accepted as equivalent to the restricted
+direct Kata actor.
+
 The actor runs non-root under `kata-vm-isolation`, with a read-only root
 filesystem, dropped capabilities, no privilege escalation, no service-account
 token, no host volume, and an ephemeral `emptyDir` workspace. Cilium permits

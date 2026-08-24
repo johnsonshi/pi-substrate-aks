@@ -127,6 +127,15 @@ access that never leaves the local machine.
 - Applying a Kubernetes Secret is not key revocation: merge semantics can keep
   omitted data keys. Stop the old capability holders, delete/recreate the
   disposable Secret, then start workloads with the new key set.
+- A managed Kubernetes version number does not prove that every upstream beta
+  API is enabled. The pinned Substrate identity plane needed
+  PodCertificateRequest and ClusterTrustBundle; AKS exposed neither and pruned
+  their projected-volume fields. A server-side dry-run gate avoided a partial
+  cluster-wide install.
+- Compatibility and security can fail independently. Even with the certificate
+  APIs, the upstream gVisor worker's host path, mount propagation, AppArmor
+  unconfined, and broad capabilities would need a separate trust decision; it
+  is not the same boundary as a restricted Kata actor.
 
 ## Measurements to capture
 

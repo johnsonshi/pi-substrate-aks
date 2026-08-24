@@ -671,3 +671,66 @@ operator tooling even when ordinary Service traffic works.
 Keep the relay as the only cluster ingress and enforce actor-side test success
 before patch export. Checkpoint this milestone, then expand the same boundary to
 two isolated concurrent actors before attempting remote lifecycle semantics.
+
+## 2026-08-24 04:39 PDT - Pinned Substrate AKS compatibility gate
+
+### Goal
+
+Attempt the pinned Substrate control-plane and gVisor matrix row on the
+dedicated AKS cluster without leaving an unusable partial installation.
+
+### Hypothesis
+
+If AKS exposes the beta Kubernetes certificate APIs used by the pinned
+Substrate identity plane, the upstream install can proceed to a bounded worker
+placement experiment. Otherwise the managed API is a hard preflight blocker.
+
+### Environment
+
+- local git baseline: `23ddb65`
+- upstream SHA: `bc51ef2452c4bf4c0542cd6850040c9ed1033421`
+- AKS/context: `pisa-aks`
+- Kubernetes server: `v1.35.6`
+- cluster mutation: none; server-side dry run only
+
+### Actions
+
+Added and ran `make aks-substrate-preflight`. The probe confirmed the pinned
+checkout, queried the AKS API resources, and submitted a minimal Pod containing
+the exact `podCertificate` and `clusterTrustBundle` projected sources with
+server-side dry run. It also verified the upstream certificate-controller,
+workload projection, gVisor host-path, and capability dependencies from the
+pinned source.
+
+### Result
+
+**BLOCKED.** AKS exposed neither `PodCertificateRequest` nor
+`ClusterTrustBundle`. Server decoding removed both projection sources. The
+upstream install would therefore wait indefinitely for trust bundles and leave
+identity-dependent workloads without credentials. No Substrate resource was
+applied.
+
+The gVisor WorkerPool was not submitted after the control-plane gate failed.
+Its generated worker pod independently requires `/var/lib/ateom-gvisor` from
+the node, mount propagation, AppArmor unconfined, and broad capabilities
+including `SYS_ADMIN`, which is not the restricted actor boundary accepted by
+this POC.
+
+### Evidence
+
+- `experiments/009-substrate-aks/RESULTS.md`
+- `evidence/substrate-aks/preflight.txt`
+- `scripts/probe-substrate-aks.sh`
+
+### Interpretation
+
+The blocker belongs to the managed control plane, not image building or
+application scheduling. Forcing progress with static certificates or a partial
+install would weaken the security model without proving a supported
+architecture.
+
+### Decision / next experiment
+
+Keep the pinned Substrate lifecycle proof on kind and the remote Pi actor on
+direct AKS Kata. Continue the runtime matrix with the OSS Agent Sandbox
+controller rather than modifying Substrate's identity design.

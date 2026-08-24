@@ -44,7 +44,7 @@ A separate, temporary privileged diagnostic namespace tested only the
 | Restricted AKS Kata pod | **PASS** | Distinct guest kernel; no credentials/token/KVM; API, IMDS, public egress blocked |
 | Substrate microVM prerequisite in runc pod | **BLOCKED** | Node `/dev/kvm` is not a character device; privileged mount returns KVM API version `0` |
 | Substrate microVM inside AKS Kata | **BLOCKED** | No KVM in normal Kata pod; attempted host-device placement timed out creating the Kata sandbox |
-| Substrate gVisor on AKS | **PENDING** | Requires pinned control-plane/worker attempt |
+| Substrate control plane and gVisor on AKS | **BLOCKED** | Managed API lacks the required PodCertificateRequest and ClusterTrustBundle resources; the upstream worker also requires host paths and broad capabilities |
 | OSS Agent Sandbox + AKS Kata | **PENDING** | Fallback controller not yet installed |
 
 The final digest-pinned restricted probes returned:
@@ -78,8 +78,12 @@ Pi actor. It is not a placement for a nested Substrate KVM microVM on this
 pool. Even the normal runc placement lacks a usable `/dev/kvm`, so the current
 `KataVmIsolation` pool cannot host Substrate's KVM backend.
 
-This does not yet decide whether Substrate's gVisor workers or control plane can
-run on AKS. Those remain separate tests.
+The follow-up pinned preflight in
+`experiments/009-substrate-aks/RESULTS.md` found that the managed API cannot
+bootstrap Substrate's certificate identity plane. The upstream gVisor worker
+also falls outside the restricted direct-actor boundary because it requires a
+node host path, mount propagation, AppArmor unconfined, and broad Linux
+capabilities.
 
 ## Evidence
 

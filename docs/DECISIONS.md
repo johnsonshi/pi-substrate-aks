@@ -422,3 +422,53 @@ remains.
 - `deploy/aks/remote-actor.yaml`
 - `experiments/008-remote-actor/RESULTS.md`
 - `evidence/remote-actor/remote-smoke.txt`
+
+## D-011: Stop the AKS Substrate install at the certificate API gate
+
+**Status:** accepted
+
+### Context
+
+The pinned Substrate control plane bootstraps workload identity through
+Kubernetes `PodCertificateRequest` and `ClusterTrustBundle` APIs. The managed
+AKS API server exposes neither resource and removes the corresponding projected
+volume fields during server-side decoding. The upstream gVisor worker also
+requires node host paths, mount propagation, AppArmor unconfined, and broad
+capabilities.
+
+### Options considered
+
+- Apply the upstream bundle until it fails, leaving partial cluster-scoped
+  resources.
+- Fork the identity plane or inject static signing material.
+- Treat a privileged upstream gVisor worker as equivalent to the restricted
+  direct Kata actor.
+- Stop before mutation, preserve the kind proof, and use direct AKS Kata.
+
+### Decision
+
+Make the required API surface a reproducible preflight gate. Do not install the
+control plane when the identity APIs are unavailable. Do not fork around the
+gate or weaken the accepted actor boundary.
+
+### Rationale
+
+The missing APIs are a managed-control-plane incompatibility, not an
+application rollout bug. A partial install cannot become healthy and creates
+unnecessary cluster-wide state. Static identity material would weaken the
+security model, while the direct Kata actor already proves the required remote
+coding path without cloud/model credentials.
+
+### Consequences
+
+Substrate pause/suspend semantics remain proven only on the pinned kind gVisor
+baseline. AKS Substrate control-plane, gVisor, and Substrate-managed lifecycle
+rows are blocked until the managed API changes or a separate self-managed
+Kubernetes control plane is deliberately evaluated. Direct AKS Kata remains
+the accepted remote actor runtime.
+
+### Evidence
+
+- `scripts/probe-substrate-aks.sh`
+- `experiments/009-substrate-aks/RESULTS.md`
+- `evidence/substrate-aks/preflight.txt`

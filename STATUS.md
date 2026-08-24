@@ -35,7 +35,8 @@ Last updated: 2026-08-24
 | Actor Kubernetes API, IMDS, and public egress denial | PASS (policy + probe) | Actor egress allows only relay and DNS; direct Kata probe blocked API, IMDS, and public internet |
 | Substrate microVM on AKS sandbox node (runc) | BLOCKED | `/dev/kvm` is not a usable character device; KVM API version `0` |
 | Substrate microVM inside AKS Kata | BLOCKED | No guest KVM; host-device placement could not create the Kata sandbox |
-| Agent Substrate control plane on AKS | PENDING | |
+| Agent Substrate control plane on AKS | BLOCKED | Managed API omits required PodCertificateRequest and ClusterTrustBundle resources; `experiments/009-substrate-aks/RESULTS.md` |
+| Substrate gVisor WorkerPool on AKS | BLOCKED | Control-plane identity cannot bootstrap; upstream worker also requires node host paths, mount propagation, AppArmor unconfined, and broad capabilities |
 | Remote Pi actor | PASS | Digest-pinned Kata actor accepted a manifest archive, edited and tested `math.js`, and returned a locally validated patch |
 | Two concurrent Pi actors | PENDING | |
 | Workspace isolation | PASS | Canonical-path/tool policy plus a private Kata `emptyDir`; no trusted filesystem mount |

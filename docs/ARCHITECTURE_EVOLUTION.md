@@ -381,3 +381,37 @@ The digest-pinned Kata actor edited and tested one fixture, returned only
 `math.js`, and the trusted side replayed, tested, and committed it. Removing
 the bridge caused `actor_acceptance_failed` and no patch. Two-actor
 orchestration and remote lifecycle remain open.
+
+## v9 - Managed-control-plane compatibility gate
+
+```text
+Pinned Substrate install
+  |
+  +-- requires PodCertificateRequest ---------+
+  +-- requires ClusterTrustBundle ------------+--> AKS API: unavailable
+  +-- requires projected certificate sources -+        |
+  |                                                     v
+  `-- gVisor worker: hostPath + broad caps       stop before mutation
+
+Accepted remote path
+  `-- private relay -> restricted AKS Kata Pi actor
+```
+
+### Reason for change
+
+The local Substrate lifecycle proof did not establish whether the pinned
+identity plane could bootstrap on a managed AKS API server. A reproducible
+preflight now decides that before cluster-scoped installation.
+
+### Security implications
+
+The POC does not replace missing certificate APIs with static signing material
+and does not reinterpret a host-mounted, broadly capable gVisor worker as a
+restricted actor. No partial Substrate resources were installed on AKS.
+
+### Result
+
+Both required certificate resources were absent, and server-side dry run
+removed both projected certificate sources. Substrate on AKS is blocked at the
+control-plane boundary. The direct credential-free Kata architecture remains
+unchanged.

@@ -67,6 +67,27 @@ only sanitized device/API results, and remove the
 `pi-substrate-diagnostics` namespace immediately afterward. It is not an actor
 manifest.
 
+## Pinned Substrate compatibility gate
+
+Run the read-only managed-control-plane preflight:
+
+```bash
+make aks-substrate-preflight
+```
+
+The pinned upstream control plane depends on the beta Kubernetes
+`PodCertificateRequest` and `ClusterTrustBundle` resources. The measured AKS
+API exposes neither and prunes both projected-volume sources during
+server-side dry run. The preflight therefore emits
+`PISA_SUBSTRATE_AKS_PREFLIGHT_BLOCKED` and performs no cluster mutation.
+
+Do not continue with a partial upstream install: it would create cluster-wide
+CRDs/RBAC but cannot establish the required mTLS identities. Do not replace
+the identity plane with static credentials for this POC. The upstream gVisor
+worker also requires node host paths, mount propagation, AppArmor unconfined,
+and broad capabilities, so it is not accepted as the restricted AKS actor
+fallback.
+
 ## Remote actor proof
 
 Build the amd64 harness image with the dedicated local buildx builder:

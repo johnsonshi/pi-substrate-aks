@@ -179,6 +179,27 @@ passthrough into Kata could not create a sandbox. Therefore this pool is
 accepted for direct Kata actor isolation but blocked for nested Substrate
 microVM placement.
 
+## Pinned Substrate on AKS
+
+The pinned upstream control plane and gVisor WorkerPool are blocked on this
+managed AKS control plane:
+
+```bash
+make aks-substrate-preflight
+```
+
+AKS does not expose the `PodCertificateRequest` or `ClusterTrustBundle`
+resources required by the upstream identity bootstrap. A server-side dry run
+also removes both projected certificate-volume sources. The preflight stops
+without mutating the cluster rather than leaving partial cluster-scoped CRDs
+and RBAC.
+
+The upstream gVisor worker independently requires a node host path, mount
+propagation, AppArmor unconfined, and broad Linux capabilities. It is not
+accepted as equivalent to this POC's restricted direct Kata actor. Exact
+evidence is in
+[experiments/009-substrate-aks/RESULTS.md](experiments/009-substrate-aks/RESULTS.md).
+
 ## Remote AKS Pi actor
 
 The remote path keeps authenticated Copilot entirely on the trusted
