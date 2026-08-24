@@ -14,7 +14,7 @@ import type {
   EditOperations,
   ReadOperations,
   WriteOperations,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 
 const TEST_COMMANDS = new Map<string, { executable: string; args: string[] }>([
   ["npm test", { executable: "npm", args: ["test"] }],

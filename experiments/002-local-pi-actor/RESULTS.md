@@ -69,3 +69,8 @@ validation remain mandatory for remote use.
 - Package source as a validated archive and return a validated patch.
 - Add process, network, service-account, metadata, and prompt-injection security
   tests under the eventual isolated runtime.
+
+## Follow-up
+
+The same eight-test suite passed after migrating to the patched
+`@earendil-works/pi-*` `0.84.2` package family.

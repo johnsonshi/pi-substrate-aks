@@ -237,3 +237,57 @@ Model authentication does not need to enter the actor process or workspace.
 
 Implement trusted archive-in and validated patch-out transport before any actor
 receives non-fixture source.
+
+## 2026-08-24 01:11 PDT - Pi security migration
+
+### Goal
+
+Remove known production dependency vulnerabilities without regressing the Pi
+coding loop or introducing file-backed credentials.
+
+### Hypothesis
+
+The maintained `@earendil-works/pi-*` package family is API-compatible after a
+small migration to its `ModelRuntime` API and includes the published fixes.
+
+### Environment
+
+- local git commit: `2987391`
+- old Pi packages: `@mariozechner/pi-*` `0.73.1`
+- new Pi packages: `@earendil-works/pi-*` `0.84.2`
+- runtime: trusted macOS arm64 workstation
+
+### Actions
+
+Reviewed the reported advisories, confirmed the deprecated namespace has no
+patched release, and migrated all direct Pi imports together. Replaced legacy
+auth/model registry construction with `ModelRuntime`, an in-memory credential
+store, an in-memory model store, no models file, and network catalog refresh
+disabled. Installed dependencies with lifecycle scripts disabled. Ran type
+checking, all eight tests, the real Pi/Copilot smoke, and a production
+dependency audit.
+
+### Result
+
+**PASS.** Fake and real actor flows remained green. The real smoke returned
+`PISA_PI_COPILOT_OK`. `npm audit --omit=dev` reported zero vulnerabilities.
+
+### Evidence
+
+- `packages/pi-actor/package.json`
+- `packages/pi-actor/src/pi-actor.ts`
+- `package-lock.json`
+- GitHub advisories `GHSA-jfgx-wxx8-mp94`,
+  `GHSA-r95r-rj6r-c39x`, `GHSA-7v5m-pr3q-6453`, and
+  `GHSA-jmr9-qjv8-65gv`
+
+### Interpretation
+
+Disabling extensions and file-backed auth reduced exploitability, but upgrading
+removed the vulnerable code and archive dependency entirely. The in-memory
+runtime preserves the no-actor-credential design.
+
+### Decision / next step
+
+Keep exact Pi versions pinned and include the production audit in security
+checkpoints. Continue with source transport.

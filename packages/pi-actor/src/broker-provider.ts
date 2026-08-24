@@ -7,7 +7,7 @@ import {
   type TextContent,
   type ToolCall,
   type ToolResultMessage,
-} from "@mariozechner/pi-ai";
+} from "@earendil-works/pi-ai";
 import type {
   JsonValue,
   ModelToolDefinition,

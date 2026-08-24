@@ -27,8 +27,15 @@ Never commit or capture token values, credential files, kubeconfig contents,
 subscription or tenant identifiers, private keys, Keychain contents, or full
 environment dumps. Evidence must record only sanitized metadata and conclusions.
 
+## Dependency posture
+
+Pi is pinned to the patched `@earendil-works/pi-*` `0.84.2` package family.
+Dependency installation disables lifecycle scripts. The deprecated
+`@mariozechner/pi-coding-agent` `0.73.1` line is prohibited because its known
+extension-path, auth-file, and HTML-export advisories have no patched release
+under the old package name.
+
 ## Reporting
 
 This is a private experimental repository. Record discovered vulnerabilities in
 the private repository without including live secrets.
-

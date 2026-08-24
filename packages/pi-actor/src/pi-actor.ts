@@ -1,10 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
-import type { AssistantMessage, Model } from "@mariozechner/pi-ai";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
 import {
-  AuthStorage,
+  InMemoryCredentialStore,
+  InMemoryModelsStore,
+  type AssistantMessage,
+  type Model,
+} from "@earendil-works/pi-ai";
+import {
   createAgentSession,
   createBashTool,
   createEditTool,
@@ -12,10 +16,11 @@ import {
   createWriteTool,
   DefaultResourceLoader,
   ModelRegistry,
+  ModelRuntime,
   SessionManager,
   SettingsManager,
   type ToolDefinition,
-} from "@mariozechner/pi-coding-agent";
+} from "@earendil-works/pi-coding-agent";
 import { BrokerClient } from "./broker-client.js";
 import { createBrokerStream } from "./broker-provider.js";
 import { WorkspacePolicy } from "./workspace-policy.js";
@@ -69,8 +74,14 @@ export class PiActor {
     });
     const providerName = `pisa-broker-${randomUUID()}`;
     const apiName = `${providerName}-api`;
-    const authStorage = AuthStorage.inMemory();
-    const modelRegistry = ModelRegistry.inMemory(authStorage);
+    const modelRuntime = await ModelRuntime.create({
+      credentials: new InMemoryCredentialStore(),
+      modelsPath: null,
+      modelsStore: new InMemoryModelsStore(),
+      allowModelNetwork: false,
+      refreshOnCreate: false,
+    });
+    const modelRegistry = new ModelRegistry(modelRuntime);
     modelRegistry.registerProvider(providerName, {
       api: apiName,
       baseUrl: "http://127.0.0.1:0",
@@ -120,8 +131,7 @@ export class PiActor {
     const tools = createWorkspaceTools(this.#options.workspace, policy);
     const { session } = await createAgentSession({
       cwd: this.#options.workspace,
-      authStorage,
-      modelRegistry,
+      modelRuntime,
       model,
       thinkingLevel: "off",
       noTools: "all",

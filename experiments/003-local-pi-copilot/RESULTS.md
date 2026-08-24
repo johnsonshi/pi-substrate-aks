@@ -61,3 +61,8 @@ transcripts, tool output, or authentication material.
 - Validate archive-in and patch-out source transport.
 - Place the actor behind process, network, and kernel isolation.
 - Insert the credential-free relay and prove the same task from AKS.
+
+## Follow-up
+
+The exact smoke passed again after migrating to the patched
+`@earendil-works/pi-*` `0.84.2` package family.

@@ -53,6 +53,10 @@ access that never leaves the local machine.
 - A narrow proof marker is useful evidence: the smoke prints only
   `PISA_PI_COPILOT_OK`, not model text, session details, tool output, or
   authentication material.
+- Security advisories arrived after the first Pi proof. The deprecated package
+  namespace had no patched release, so the harness migrated as a family to
+  `@earendil-works/pi-*` `0.84.2`; fake and real coding loops still passed, and
+  the production dependency audit returned zero findings.
 
 ## Measurements to capture
 

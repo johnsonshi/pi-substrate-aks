@@ -151,3 +151,44 @@ stronger process/runtime isolation before remote use.
 - `packages/copilot-broker/src/copilot-sdk-backend.ts`
 - `packages/pi-actor/src/broker-provider.ts`
 - `experiments/002-local-pi-actor/RESULTS.md`
+
+## D-005: Migrate Pi to the patched package namespace
+
+**Status:** accepted
+
+### Context
+
+GitHub reported high-severity advisories after the initial Pi integration. The
+deprecated `@mariozechner/pi-coding-agent` line ends at `0.73.1` and has no
+patched release. The maintained package moved to `@earendil-works`.
+
+### Options considered
+
+- Retain `0.73.1` because extensions and file-backed auth are disabled.
+- Downgrade according to npm's incomplete automatic fix suggestion.
+- Migrate the complete Pi package family to a current patched release.
+
+### Decision
+
+Pin `@earendil-works/pi-agent-core`, `pi-ai`, and `pi-coding-agent` to `0.84.2`.
+Use in-memory credential and model stores with model-network refresh disabled.
+
+### Rationale
+
+Avoiding vulnerable code paths is defense in depth, not a substitute for taking
+available security patches. Migrating the complete family avoids mixed-scope
+type/runtime duplication and resolves the vulnerable transitive archive
+dependency.
+
+### Consequences
+
+The actor uses the newer `ModelRuntime` API instead of the legacy in-memory
+`AuthStorage`/`ModelRegistry` factories. Future updates require both fake and
+real coding-loop validation.
+
+### Evidence
+
+- `packages/pi-actor/package.json`
+- `packages/pi-actor/src/pi-actor.ts`
+- zero findings from `npm audit --omit=dev` on 2026-08-24
+- successful `npm run smoke:pi-copilot`
