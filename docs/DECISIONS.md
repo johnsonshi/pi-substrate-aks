@@ -670,3 +670,57 @@ node-local denial without recording node addresses.
 - `deploy/aks/multi-actor.yaml`
 - `scripts/verify-remote-security.ts`
 - `evidence/security/acceptance.txt`
+
+## D-016: Publish only after completion and credential-history audit
+
+**Status:** accepted
+
+### Context
+
+The original experiment required a private repository while the architecture,
+runtime boundary, and evidence discipline were still being developed. After
+the final handoff, the owner requested a public repository that could showcase
+both the working harness and its explicit limitations. Publication exposes all
+reachable source, prompts, experiment notes, resource names, and historical
+failures, so the transition must not rely only on current-tree inspection.
+
+### Options considered
+
+- Keep the completed POC private.
+- Make it public without changing documentation or repository security
+  settings.
+- Audit all reachable Git history, preserve the original private requirement
+  as historical context, update current-state documentation, and enable
+  GitHub's public-repository security controls before publication.
+
+### Decision
+
+Publish the repository after two independent read-only scans found no
+high-confidence credential material in all reachable commits and blobs.
+Preserve `INITIAL_PROMPT.md`, `AGENTS.md`, and historical lab entries as the
+original execution record, while adding an explicit publication override to
+the design and updating reader-facing status. Enable secret scanning, push
+protection, and private vulnerability reporting.
+
+### Rationale
+
+The repository's value is the inspectable authority split, implementation,
+failed runtime placements, and sanitized evidence. Publishing only after the
+experiment is complete avoids weakening the private-by-default build process,
+while full-history review addresses deleted or superseded content that a
+current-tree scan would miss.
+
+### Consequences
+
+All reachable repository history is now public. Future pushes are subject to
+GitHub push protection but still require local secret review. The public About
+metadata must describe the direct Kata result without implying that upstream
+Agent Substrate runs on AKS. Security findings should use private
+vulnerability reporting rather than public disclosure.
+
+### Evidence
+
+- `README.md`
+- `SECURITY.md`
+- `STATUS.md`
+- `docs/LAB_NOTES.md`

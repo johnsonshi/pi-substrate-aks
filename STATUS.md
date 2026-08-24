@@ -7,7 +7,8 @@ Last updated: 2026-08-24
 | Item | Status | Evidence |
 |---|---|---|
 | Workspace restricted to `~/repos/pi-substrate-aks` | PASS | Safe preflight |
-| GitHub repository is private | PASS | `gh repo view` returned `PRIVATE` |
+| GitHub repository is public | PASS | Owner-approved publication after final validation and reachable-history credential audit; `gh repo view` returned `PUBLIC` |
+| GitHub secret protection | PASS | Secret scanning, push protection, and private vulnerability reporting are enabled |
 | GitHub CLI authenticated | PASS | Safe status check; no token value captured |
 | GitHub Copilot CLI available | PASS | Version `1.0.81-3` |
 | Azure CLI authenticated | PASS | CLI `2.89.1`; account state `Enabled` |
@@ -59,5 +60,5 @@ Last updated: 2026-08-24
 | Trusted archive-in / binary patch-out transport | PASS | `experiments/004-source-transport/RESULTS.md`; seven transport integration cases |
 | In-cluster relay and trusted local bridge | PASS | Actor-keyed target allowlist, redirect refusal, per-actor model/job-delivery/broker capabilities, shared tunnel/job-client capabilities, ClusterIP-only services, bounded proxying, and disconnect failure |
 | Remote patch acceptance gate | PASS | Remote service independently replays and tests the exact final patch; trusted tests run in a no-network container before commit |
-| Repo private and pushed | PASS | Multi-actor milestone `0f0e517` pushed to `main`; visibility reverified as `PRIVATE` |
+| Repo public and pushed | PASS | `main` is pushed; visibility is `PUBLIC`; About description and eleven relevant topics are set |
 | User/org harness showcase | PASS | `README.md` leads with the demonstrated user experience, organization control pattern, actor authority, runtime truth, and explicit non-claims |

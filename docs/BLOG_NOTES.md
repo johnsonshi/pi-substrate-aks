@@ -213,3 +213,18 @@ access that never leaves the local machine.
 - Keep the "cannot" table prominent. A credible agent-platform story includes
   missing production controls, cold process restart, narrow workload support,
   controller RBAC, denied public egress, and the absence of fleet-scale proof.
+
+## Public release framing
+
+- The public repository is the inspectable artifact: implementation, failed
+  placements, security controls, reproducible commands, and sanitized evidence
+  are available together.
+- Preserve the private-build-to-public-release sequence in the story. It shows
+  that transparency does not require making an active credential experiment
+  public before its history has been reviewed.
+- Lead GitHub About metadata with the proven direct Kata architecture, then
+  name Agent Substrate as compatibility evidence rather than a successful AKS
+  runtime.
+- GitHub secret scanning, push protection, and private vulnerability reporting
+  are part of the publication posture, not substitutes for the trusted local
+  boundary or pre-push review.

@@ -142,5 +142,7 @@ under the old package name.
 
 ## Reporting
 
-This is a private experimental repository. Record discovered vulnerabilities in
-the private repository without including live secrets.
+This is a public experimental repository. Use GitHub private vulnerability
+reporting for security findings. Do not place exploit details, credential
+material, or other sensitive evidence in a public issue. Secret scanning and
+push protection are enabled, but they do not replace local review.

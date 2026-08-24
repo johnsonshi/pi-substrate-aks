@@ -20,6 +20,12 @@ replayed and tested before a trusted local commit.
 > local kind, but is blocked on this AKS configuration. This repository does
 > not relabel direct Kata execution as "Agent Substrate on AKS."
 
+The experiment was built privately under its original safety constraints. It
+was made public on 2026-08-24 only after final validation and two independent
+scans of all reachable Git history found no high-confidence credential
+material. GitHub secret scanning, push protection, and private vulnerability
+reporting are enabled.
+
 ## What this repository proves
 
 | Question | Proven result |
@@ -166,7 +172,7 @@ only disjoint changes into a fresh baseline and tests the exact combined tree.
 
 | Not proven | Honest boundary |
 |---|---|
-| Production readiness | This is a private POC, not a supported multi-tenant service. It has no production SLA, HA, quota, billing, abuse-management, or operator UX layer. |
+| Production readiness | This is a public research POC, not a supported multi-tenant service. It has no production SLA, HA, quota, billing, abuse-management, or operator UX layer. |
 | Agent Substrate on AKS | Upstream Substrate works on the pinned local kind baseline, not on this AKS control plane. |
 | Full-state suspend/resume on AKS | Agent Sandbox preserves workspace PVC data, not process memory or Pi in-memory session state. |
 | Broad workload compatibility | The demonstrated coding tasks and command allowlist are intentionally narrow and Node-oriented. |

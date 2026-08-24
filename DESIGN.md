@@ -2,10 +2,16 @@
 
 ## Design and implementation plan
 
-**Repository:** `github.com/johnsonshi/pi-substrate-aks`  
-**Local workspace:** `~/repos/pi-substrate-aks`  
-**Repository visibility:** private  
-**Primary goal:** prove a Pi-derived coding-agent harness can orchestrate durable Pi actors on Agent Substrate running on AKS, with sandbox isolation, while model access uses the operator's already-authenticated local GitHub Copilot CLI without copying GitHub credentials into the cluster.
+- **Repository:** `github.com/johnsonshi/pi-substrate-aks`
+- **Local workspace:** `~/repos/pi-substrate-aks`
+- **Repository visibility:** public as of 2026-08-24
+- **Primary goal:** prove a Pi-derived coding-agent harness can orchestrate durable Pi actors on Agent Substrate running on AKS, with sandbox isolation, while model access uses the operator's already-authenticated local GitHub Copilot CLI without copying GitHub credentials into the cluster.
+
+> **Publication override:** the original design required private visibility
+> throughout implementation. After final validation and a complete
+> reachable-history credential audit, the repository owner explicitly approved
+> public visibility. Historical private-repository requirements and checks
+> below remain unchanged as an execution record.
 
 ## 1. Desired end state
 

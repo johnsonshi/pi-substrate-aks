@@ -1147,3 +1147,44 @@ Lead with the reusable authority-separation pattern and measured proof. Keep
 the detailed experiment chronology in `docs/LAB_NOTES.md` and
 `docs/ARCHITECTURE_EVOLUTION.md`, and keep blocked runtime rows visible as
 results rather than hiding them behind the working fallback.
+
+## 2026-08-24 12:27 PDT - Owner-approved public release
+
+### Goal
+
+Publish the completed POC with useful GitHub About metadata while preserving
+the original private-build history and security boundary.
+
+### Actions
+
+Changed `johnsonshi/pi-substrate-aks` from private to public after the completed
+reachable-history credential audit. Added an About description focused on
+credential-local Copilot use, AKS Kata isolation, multi-actor execution,
+validated patches, and honest Agent Substrate compatibility evidence. Added
+eleven relevant repository topics.
+
+Enabled GitHub secret scanning, push protection, and private vulnerability
+reporting. Updated current-state README, design, security, status, and decision
+documentation without rewriting the original prompts or historical lab
+entries.
+
+### Result
+
+**PASS.** GitHub reports `PUBLIC` visibility. The About description and topics
+are populated. Secret scanning, push protection, and private vulnerability
+reporting all report enabled.
+
+### Evidence
+
+- GitHub repository metadata query
+- GitHub repository security-settings query
+- `README.md`
+- `SECURITY.md`
+- `STATUS.md`
+- `docs/DECISIONS.md`
+
+### Decision
+
+Keep the original private requirement as an auditable implementation-time
+guardrail. Treat public visibility as an explicit post-completion owner
+override, and require private reporting for future security findings.
