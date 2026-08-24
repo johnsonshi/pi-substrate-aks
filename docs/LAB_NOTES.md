@@ -291,3 +291,63 @@ runtime preserves the no-actor-credential design.
 
 Keep exact Pi versions pinned and include the production audit in security
 checkpoints. Continue with source transport.
+
+## 2026-08-24 01:21 PDT - Trusted source and patch transport
+
+### Goal
+
+Move committed source into an actor and return a locally committable change
+without sharing trusted Git metadata, credentials, history, or a host mount.
+
+### Hypothesis
+
+A bounded `git archive` plus actor-local Git can preserve the current snapshot
+and generate a robust binary patch. Replaying that patch in a disposable
+repository can enforce the trust boundary before canonical application.
+
+### Environment
+
+- local git commit: `09a1fd9`
+- source transport: Node.js plus Git `2.50.1`
+- archive parser: `tar-stream` `3.1.7`
+- runtime: trusted macOS arm64 workstation; all scratch data under `.state/`
+- relevant paths: `packages/orchestrator/`,
+  `tests/integration/source-transport.test.ts`
+
+### Actions
+
+Implemented exact-revision archive creation, SHA-256 archive and per-file
+manifests, bounded tar parsing, private workspace materialization, and
+credential-free actor-local Git initialization. Implemented staged full-index
+binary patch export, changed-path and content scanning, disposable repository
+replay, Git index mode validation, protected policy gating, and clean trusted
+application. Added a fake-backed Pi roundtrip and negative tests.
+
+### Result
+
+**PASS.** Fifteen total tests passed, including seven source transport cases. A
+Pi actor received only the archive and actor token, changed and tested
+`math.js`, returned a patch, and the trusted temporary repository committed the
+validated result. Credential-like paths, source/actor symlinks, protected
+policy changes, repository-local artifacts outside `.state/`, and a modified
+patch were rejected. The real Pi/Copilot smoke still returned
+`PISA_PI_COPILOT_OK`, and the repository's committed tree produced a bounded
+source archive successfully.
+
+### Evidence
+
+- `experiments/004-source-transport/RESULTS.md`
+- `packages/orchestrator/src/source-transport.ts`
+- `tests/integration/source-transport.test.ts`
+
+### Interpretation
+
+Snapshot archives avoid exposing reachable Git history. Validating the
+post-application tree catches unsafe modes and links that header-only patch
+inspection could miss. The actor still needs runtime isolation because its own
+process and Git metadata are untrusted.
+
+### Decision / next step
+
+Pin and run the official Agent Substrate baseline on a local kind cluster before
+creating Azure resources.

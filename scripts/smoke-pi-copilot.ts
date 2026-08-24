@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ActorTokenAuthorizer } from "../packages/copilot-broker/src/actor-token-authorizer.js";
@@ -13,7 +12,12 @@ const fixture = join(
   dirname(fileURLToPath(import.meta.url)),
   "../tests/fixtures/simple-calculator",
 );
-const workspace = await mkdtemp(join(tmpdir(), "pisa-pi-copilot-"));
+const scratchParent = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../.state/smoke",
+);
+await mkdir(scratchParent, { recursive: true });
+const workspace = await mkdtemp(join(scratchParent, "pisa-pi-copilot-"));
 const actorId = "local-pi-copilot-smoke";
 const actorToken = randomBytes(32).toString("base64url");
 const server = new BrokerServer({

@@ -36,4 +36,5 @@ Last updated: 2026-08-24
 | Pi SDK actor with fake broker | PASS | `experiments/002-local-pi-actor/RESULTS.md` |
 | Real Pi coding task through local Copilot | PASS | Exact `PISA_PI_COPILOT_OK` smoke marker; `experiments/003-local-pi-copilot/RESULTS.md` |
 | Production dependency audit | PASS | Patched `@earendil-works/pi-*` `0.84.2`; `npm audit --omit=dev` reports zero advisories |
+| Trusted archive-in / binary patch-out transport | PASS | `experiments/004-source-transport/RESULTS.md`; seven transport integration cases |
 | Repo private and pushed | PASS | Bootstrap commit `3e1ef52` pushed; visibility reverified |

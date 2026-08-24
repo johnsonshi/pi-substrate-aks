@@ -57,6 +57,14 @@ access that never leaves the local machine.
   namespace had no patched release, so the harness migrated as a family to
   `@earendil-works/pi-*` `0.84.2`; fake and real coding loops still passed, and
   the production dependency audit returned zero findings.
+- Git bundles are convenient but can expose reachable history, including
+  sensitive data deleted from the current tree. A one-commit `git archive`
+  provides a narrower source boundary; actor-local Git can still produce a
+  full-index binary patch.
+- Patch validation is stronger when it reconstructs the resulting filesystem.
+  The transport replays untrusted output in a disposable repository, checks
+  paths, modes, links, credentials, and protected files, then stages the same
+  patch in the clean trusted repository.
 
 ## Measurements to capture
 

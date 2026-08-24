@@ -148,3 +148,46 @@ filesystem or shell operation locally.
 - Validated archive-in and patch-out source transport.
 - Relay behavior across a private tunnel and disconnect.
 - Remote process, network, and kernel isolation.
+
+## v4 - Snapshot-in and validated patch-out
+
+```text
+Trusted clean Git repository
+  | git archive of exact commit + SHA-256 manifest
+  v
+New private actor workspace
+  | actor-local credential-free Git baseline
+  v
+Pi read / edit / test
+  | full-index binary patch + changed-path manifest
+  v
+Disposable trusted validation repository
+  | path, mode, file, credential, and policy checks
+  v
+Trusted repository staging --> local review / commit / push
+```
+
+### Reason for change
+
+The actor must edit real source without receiving the trusted repository,
+history, credentials, or host filesystem.
+
+### Security implications
+
+The snapshot contains only committed regular files from one revision. Integrity
+metadata detects transport mutation. The returned patch is untrusted until it
+replays cleanly in a disposable repository and passes final-tree checks.
+Protected policy changes fail closed unless the trusted caller explicitly
+allows them.
+
+### Result
+
+A fake-backed Pi actor received an archive, fixed and tested the fixture,
+returned one binary patch, and the trusted side validated, staged, and committed
+only `math.js`. Negative cases rejected credential paths, source and actor
+symlinks, protected policy changes, and post-export patch tampering.
+
+### Remaining unknowns
+
+- Relay and artifact transport across the AKS boundary.
+- Remote process, network, and kernel isolation.

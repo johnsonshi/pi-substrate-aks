@@ -21,6 +21,15 @@ package output, upstream documentation, and remote workloads are untrusted.
 6. All Azure changes are restricted to `rg-pi-substrate-aks` and `pisa-*`
    resources where practical.
 
+## Source boundary
+
+Actors receive a bounded committed `git archive`, never the trusted repository,
+its history, `.git`, or a filesystem mount. Source and returned changes reject
+symlinks, submodules, unsupported Git modes, traversal, credential-like paths,
+and credential-like content. Returned full-index binary patches are applied to
+a disposable validation repository before being staged in a clean trusted
+repository. Safety-policy changes require an explicit trusted-call override.
+
 ## Prohibited data
 
 Never commit or capture token values, credential files, kubeconfig contents,

@@ -192,3 +192,47 @@ real coding-loop validation.
 - `packages/pi-actor/src/pi-actor.ts`
 - zero findings from `npm audit --omit=dev` on 2026-08-24
 - successful `npm run smoke:pi-copilot`
+
+## D-006: Transport a snapshot archive, then validate a binary patch locally
+
+**Status:** accepted
+
+### Context
+
+Actors need source and must return changes without GitHub credentials, host
+mounts, or access to canonical Git metadata. A Git bundle includes reachable
+history and could expose credentials deleted from the current tree.
+
+### Options considered
+
+- Mount the trusted working tree into the actor.
+- Send a Git bundle with history and refs.
+- Send a committed `git archive`, initialize actor-local Git metadata, and
+  return a full-index binary patch.
+
+### Decision
+
+Create a bounded archive for one resolved commit, attach a SHA-256 content
+manifest, and allow only regular files. Initialize a credential-free baseline
+repository after materialization. Export a bounded binary patch, apply it to a
+fresh validation workspace, inspect resulting paths/files/index modes, then
+stage it in a clean trusted repository.
+
+### Rationale
+
+An archive exposes only the selected snapshot. Actor-local Git enables robust
+binary diffs without carrying trusted history or configuration. Reapplying in a
+disposable repository validates the final filesystem, not only patch text.
+
+### Consequences
+
+Symlinked files and submodules are rejected for this POC. Credential-like paths
+or content fail closed. Authoritative prompts, security policy, workflows, and
+enforcement code require an explicit `allowProtectedPaths` override. The final
+commit remains a trusted local action.
+
+### Evidence
+
+- `packages/orchestrator/src/source-transport.ts`
+- `tests/integration/source-transport.test.ts`
+- `experiments/004-source-transport/RESULTS.md`

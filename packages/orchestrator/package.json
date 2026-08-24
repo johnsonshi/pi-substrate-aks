@@ -1,0 +1,12 @@
+{
+  "name": "@pisa/orchestrator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "tar-stream": "3.1.7"
+  }
+}

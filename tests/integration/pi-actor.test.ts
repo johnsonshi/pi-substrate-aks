@@ -9,7 +9,6 @@ import {
   symlink,
   writeFile,
 } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, test } from "node:test";
@@ -24,6 +23,10 @@ import { PiActor } from "../../packages/pi-actor/src/index.js";
 const fixture = join(
   dirname(fileURLToPath(import.meta.url)),
   "../fixtures/simple-calculator",
+);
+const scratchParent = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../.state/tests",
 );
 const servers: BrokerServer[] = [];
 const workspaces: string[] = [];
@@ -156,7 +159,8 @@ async function startActor(
 }
 
 async function fixtureWorkspace(): Promise<string> {
-  const workspace = await mkdtemp(join(tmpdir(), "pisa-actor-test-"));
+  await mkdir(scratchParent, { recursive: true });
+  const workspace = await mkdtemp(join(scratchParent, "pisa-actor-test-"));
   workspaces.push(workspace);
   await cp(fixture, workspace, { recursive: true });
   return workspace;

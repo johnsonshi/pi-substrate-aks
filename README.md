@@ -95,3 +95,26 @@ npm run smoke:pi-copilot
 It must print exactly `PISA_PI_COPILOT_OK`. The actor receives only an ephemeral
 broker token; the SDK resolves the existing logged-in user inside the trusted
 local broker.
+
+## Trusted source transport
+
+`packages/orchestrator` moves a committed snapshot across the actor boundary
+without GitHub credentials or local mounts:
+
+1. resolve an exact local commit and reject links, submodules, credential-like
+   paths, and credential-like content;
+2. create a bounded `git archive` tar with a SHA-256 file manifest;
+3. parse and materialize regular files into a new private actor workspace;
+4. initialize credential-free actor-local Git metadata;
+5. export a bounded full-index binary patch after scanning actor output;
+6. apply the patch first to a disposable validation repository;
+7. reject path/manifest changes, links, unsupported modes, credentials, and
+   protected policy edits unless the trusted caller explicitly opts in;
+8. stage the validated patch in the clean trusted repository for local commit.
+
+The local roundtrip—including a fake-backed Pi edit/test task and trusted local
+commit—is reproducible with:
+
+```bash
+npm run smoke:transport:local
+```
