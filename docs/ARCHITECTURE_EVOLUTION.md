@@ -244,3 +244,44 @@ boundary.
   Substrate worker.
 - Whether AKS Kata can host the direct Pi actor fallback while enforcing
   service-account, IMDS, Kubernetes API, and egress denial.
+
+## v6 - Dedicated AKS experiment substrate
+
+```text
+rg-pi-substrate-aks
+  +-- ACR: pisasubstrate84acr
+  |     `-- Basic, admin auth disabled
+  `-- AKS: pisa-aks
+        +-- Azure CNI overlay + Cilium
+        +-- system pool
+        |     `-- 1 x Standard_D2s_v5 / Azure Linux
+        `-- sandbox pool
+              `-- 1 x Standard_D4s_v3 / Azure Linux
+                  + KataVmIsolation
+
+Trusted workstation
+  `-- user kubectl context -> AKS API
+
+Actor/broker network surfaces
+  `-- none deployed; LoadBalancer service count = 0
+```
+
+### Reason for change
+
+The upstream lifecycle is understood locally. A dedicated Azure substrate is
+now required to separate managed-control-plane, node, Kata, and networking
+compatibility from actor application behavior.
+
+### Security implications
+
+The AKS managed identity can pull only from the dedicated ACR; no registry
+credential enters a pod. ACR admin authentication is disabled. No SSH key was
+created. Kubernetes credentials remain only in the trusted workstation's
+normal configuration. Cilium is available for fail-closed actor policies.
+
+### Remaining unknowns
+
+- Actual Kata pod kernel/device/network behavior.
+- KVM visibility from normal and Kata placements.
+- Substrate control-plane and worker compatibility with AKS.
+- Remote actor relay and artifact transport.

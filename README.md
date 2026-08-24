@@ -142,3 +142,22 @@ Use the exact commands in
 [deploy/substrate/README.md](deploy/substrate/README.md). Sanitized results are
 in [experiments/005-substrate-kind/RESULTS.md](experiments/005-substrate-kind/RESULTS.md).
 This proof does not claim Substrate microVM or AKS compatibility.
+
+## Dedicated AKS POC
+
+The Azure baseline is provisioned only inside `rg-pi-substrate-aks`:
+
+```bash
+make aks-provision
+make aks-verify
+```
+
+It uses a one-node Azure Linux system pool, a one-node
+`KataVmIsolation` pool, Azure CNI overlay with Cilium, and a dedicated Basic
+ACR with admin authentication disabled. The cluster currently has no
+LoadBalancer services. See [deploy/aks/README.md](deploy/aks/README.md) and
+[experiments/006-aks-provisioning/RESULTS.md](experiments/006-aks-provisioning/RESULTS.md).
+
+Provisioning alone is not accepted as actor-isolation proof. Credential,
+service-account, Kubernetes API, IMDS, egress, KVM, and runtime placement probes
+remain part of the AKS compatibility matrix.

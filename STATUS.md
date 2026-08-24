@@ -27,6 +27,9 @@ Last updated: 2026-08-24
 | Pinned Agent Substrate control plane on kind | PASS | Exact SHA and healthy control plane in `experiments/005-substrate-kind/RESULTS.md` |
 | Substrate gVisor WorkerPool on kind | PASS | Three of three workers ready; no KVM device exposed |
 | Substrate microVM on local kind | BLOCKED | Docker kind node has no `/dev/kvm`; gVisor baseline used |
+| Dedicated AKS and ACR provisioning | PASS | `experiments/006-aks-provisioning/RESULTS.md`; idempotent provision and independent verify |
+| Azure CNI overlay with Cilium | PASS | `evidence/aks-provisioning/topology.txt` |
+| AKS Kata-capable node pool | PASS (provisioned) | Azure Linux `KataVmIsolation` pool and RuntimeClass ready; actor isolation probe pending |
 | AKS isolated actor runtime | PENDING | |
 | Agent Substrate control plane on AKS | PENDING | |
 | Remote Pi actor | PENDING | |

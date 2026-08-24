@@ -282,3 +282,46 @@ or sandbox boundary.
 - `experiments/005-substrate-kind/RESULTS.md`
 - `deploy/substrate/UPSTREAM_SHA`
 - `evidence/substrate-kind/health.txt`
+
+## D-008: Use a minimal two-pool Cilium AKS topology
+
+**Status:** accepted
+
+### Context
+
+The POC needs ordinary system capacity plus an AKS-managed Kata placement. It
+also needs enforceable Kubernetes egress policy without creating a custom
+virtual network or granting broad network roles.
+
+### Options considered
+
+- Reuse an existing cluster.
+- Create one all-purpose node pool.
+- Create a dedicated cluster with separate system and Kata-capable pools.
+
+### Decision
+
+Create `pisa-aks` only in `rg-pi-substrate-aks`, with one small Azure Linux
+system node and one Azure Linux `KataVmIsolation` user node. Use Azure CNI
+overlay with the Cilium dataplane. Use a system-assigned identity and a
+dedicated Basic ACR with admin authentication disabled.
+
+### Rationale
+
+A dedicated cluster preserves the blast-radius boundary. Separate pools expose
+runtime placement explicitly while keeping cost bounded. Cilium supplies the
+network-policy dataplane needed for actor egress denial. Managed ACR pull avoids
+registry credentials in workloads.
+
+### Consequences
+
+The single-node pools are not highly available and are suitable only for this
+POC. The public AKS control-plane endpoint remains a trusted operator surface;
+actor and relay services must stay ClusterIP-only. Provisioning does not itself
+prove Kata isolation or network denial.
+
+### Evidence
+
+- `scripts/aks-provision.sh`
+- `experiments/006-aks-provisioning/RESULTS.md`
+- `evidence/aks-provisioning/topology.txt`

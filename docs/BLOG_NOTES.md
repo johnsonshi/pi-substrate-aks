@@ -77,6 +77,16 @@ access that never leaves the local machine.
 - The Apple-silicon Docker kind node exposed no `/dev/kvm`, so upstream selected
   gVisor. That is a clean local baseline, not evidence that Substrate microVMs
   work on AKS or that AKS Kata is the same placement.
+- A minimal AKS Standard cluster can keep the matrix explicit without becoming
+  large: one small system node plus one Azure Linux `KataVmIsolation` node.
+  Azure CNI overlay with Cilium avoids custom subnet IAM while preserving a
+  network-policy enforcement path.
+- Provisioning-state races matter in reproducibility scripts. The first verify
+  saw the cluster and both pools in `Updating` immediately after node-pool
+  creation; adding an explicit Azure wait made the idempotent path accurate
+  instead of treating eventual consistency as failure.
+- The dedicated ACR uses managed pull and has admin authentication disabled, so
+  image distribution does not require a registry password in the actor.
 
 ## Measurements to capture
 

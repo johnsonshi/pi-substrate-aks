@@ -426,3 +426,69 @@ Substrate-managed microVMs remain separate placements requiring separate tests.
 Keep this upstream SHA pinned, preserve gVisor/Data/Full evidence separately,
 and proceed to the dedicated AKS runtime matrix without weakening or conflating
 the isolation claims.
+
+## 2026-08-24 01:58 PDT - Dedicated AKS and Kata pool
+
+### Goal
+
+Create the smallest practical Azure topology for the runtime matrix, entirely
+inside the dedicated POC resource group.
+
+### Hypothesis
+
+AKS `1.35` in `westus2` can combine a small Azure Linux system pool, an Azure
+Linux `KataVmIsolation` pool, Azure CNI overlay, Cilium, and a managed-identity
+pull path to a dedicated ACR.
+
+### Environment
+
+- local git commit: `be4f127`
+- resource group: `rg-pi-substrate-aks`
+- cluster/context: `pisa-aks` / `pisa-aks`
+- Kubernetes: `1.35`
+- system pool: 1 x `Standard_D2s_v5`, Azure Linux
+- sandbox pool: 1 x `Standard_D4s_v3`, Azure Linux,
+  `KataVmIsolation`
+- ACR: `pisasubstrate84acr`, Basic, admin authentication disabled
+
+### Actions
+
+Read current Azure CLI help and current Microsoft AKS Pod Sandboxing and Cilium
+documentation. Confirmed both VM sizes were available in `westus2` and the
+required providers were registered. Created guarded idempotent provision,
+verify, and teardown scripts. Provisioned the resource group, dedicated ACR,
+managed-identity AKS cluster, and Kata pool. Acquired only the normal user
+Kubernetes context on the trusted workstation, waited for Azure updates, and
+ran the verifier.
+
+The first verify ran while the cluster and pools still reported `Updating`.
+It correctly failed. The verifier was changed to use `az aks wait --updated`
+and compact profile comparisons, then passed. A second provision run exercised
+the existing-resource checks and also passed.
+
+### Result
+
+**PASS.** Both nodes are Ready. The `kata-vm-isolation` RuntimeClass is present
+with handler `kata`. Azure reports the expected overlay/Cilium profile,
+system-assigned identity, exact pool sizes/runtimes, and disabled ACR admin
+authentication. There are no LoadBalancer services.
+
+### Evidence
+
+- `experiments/006-aks-provisioning/RESULTS.md`
+- `evidence/aks-provisioning/topology.txt`
+- `scripts/aks-provision.sh`
+- `scripts/aks-verify.sh`
+- `deploy/aks/README.md`
+
+### Interpretation
+
+The cluster is a valid experiment substrate, not yet proof of workload
+isolation. Kata, KVM, API, IMDS, service-account, and egress behavior must be
+tested from actual pods before the remote actor is accepted.
+
+### Decision / next step
+
+Keep ACR admin authentication disabled, use only ClusterIP/port-forward access,
+and begin the runtime compatibility matrix with credential-free diagnostic
+pods.
