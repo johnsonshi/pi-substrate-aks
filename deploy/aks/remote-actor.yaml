@@ -1,0 +1,319 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pi-substrate
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pisa-model-relay
+  namespace: pi-substrate
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pisa-remote-actor
+  namespace: pi-substrate
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pisa-model-relay
+  namespace: pi-substrate
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-model-relay
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pisa-model-relay
+      annotations:
+        pisa.dev/deploy-revision: __PISA_DEPLOY_REVISION__
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      nodeSelector:
+        agentpool: system
+      serviceAccountName: pisa-model-relay
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: relay
+          image: __PISA_HARNESS_IMAGE__
+          imagePullPolicy: Always
+          command:
+            - node
+            - --import
+            - tsx
+            - packages/model-relay/src/relay-cli.ts
+          env:
+            - name: PISA_RELAY_ACTOR_ID
+              value: remote-actor-1
+            - name: PISA_RELAY_ACTOR_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-relay-capabilities
+                  key: actor-token
+            - name: PISA_RELAY_TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-relay-capabilities
+                  key: tunnel-token
+            - name: PISA_RELAY_JOB_CLIENT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-relay-capabilities
+                  key: job-client-token
+            - name: PISA_RELAY_ACTOR_JOB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-relay-capabilities
+                  key: actor-job-token
+            - name: PISA_RELAY_ACTOR_URL
+              value: http://pisa-remote-actor.pi-substrate.svc.cluster.local:8080/v1/run
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 1000
+            runAsUser: 1000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pisa-model-relay
+  namespace: pi-substrate
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pisa-model-relay
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pisa-remote-actor
+  namespace: pi-substrate
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-remote-actor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pisa-remote-actor
+        pisa.runtime/isolation: kata
+      annotations:
+        pisa.dev/deploy-revision: __PISA_DEPLOY_REVISION__
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      nodeSelector:
+        agentpool: sandbox
+      runtimeClassName: kata-vm-isolation
+      serviceAccountName: pisa-remote-actor
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: actor
+          image: __PISA_HARNESS_IMAGE__
+          imagePullPolicy: Always
+          command:
+            - node
+            - --import
+            - tsx
+            - packages/remote-actor/src/remote-actor-cli.ts
+          env:
+            - name: PISA_ACTOR_ID
+              value: remote-actor-1
+            - name: PISA_ACTOR_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-actor-capabilities
+                  key: actor-token
+            - name: PISA_JOB_TOKEN_SHA256
+              valueFrom:
+                secretKeyRef:
+                  name: pisa-actor-capabilities
+                  key: actor-job-token-sha256
+            - name: PISA_BROKER_URL
+              value: http://pisa-model-relay.pi-substrate.svc.cluster.local:8080
+            - name: PISA_WORK_ROOT
+              value: /workspace
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 3
+            timeoutSeconds: 1
+            failureThreshold: 60
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 1000
+            runAsUser: 1000
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: workspace
+          emptyDir:
+            sizeLimit: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pisa-remote-actor
+  namespace: pi-substrate
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pisa-remote-actor
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pisa-remote-actor-isolation
+  namespace: pi-substrate
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-remote-actor
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pisa-model-relay
+      ports:
+        - port: 8080
+          protocol: TCP
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pisa-model-relay
+      ports:
+        - port: 8080
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pisa-model-relay-restricted-egress
+  namespace: pi-substrate
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pisa-model-relay
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pisa-remote-actor
+      ports:
+        - port: 8080
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

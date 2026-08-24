@@ -14,6 +14,7 @@
     "preflight": "./scripts/preflight.sh",
     "smoke:copilot": "tsx scripts/smoke-copilot.ts",
     "smoke:pi-copilot": "tsx scripts/smoke-pi-copilot.ts",
+    "smoke:remote-actor": "tsx scripts/smoke-remote-actor.ts",
     "smoke:transport:local": "node --import tsx --test tests/integration/source-transport.test.ts",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "typecheck": "tsc --noEmit"
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@types/node": "24.5.2",
     "@types/tar-stream": "3.1.4",
+    "@types/ws": "8.18.1",
     "tsx": "4.20.5",
     "typescript": "5.9.2"
   }

@@ -90,6 +90,11 @@ export interface PatchArtifact {
   changedPaths: string[];
 }
 
+export interface MaterializedPatch {
+  baseline: ActorWorkspaceBaseline;
+  changedPaths: string[];
+}
+
 export interface SourceTransportOptions {
   maxArchiveBytes?: number;
   maxPatchBytes?: number;
@@ -380,22 +385,6 @@ export class SourceTransport {
   ): Promise<string[]> {
     const repository = await realpath(repositoryPath);
     assertArtifactLocation(repository, resolve(patch.path));
-    assertRevision(source.revision);
-    if (source.revision !== patch.sourceRevision) {
-      throw new Error("Patch source revision does not match the archive");
-    }
-    const patchBytes = await readBoundedFile(
-      patch.path,
-      this.#maxPatchBytes,
-      "Actor patch",
-    );
-    if (
-      patchBytes.length !== patch.bytes ||
-      sha256(patchBytes) !== patch.sha256
-    ) {
-      throw new Error("Actor patch integrity check failed");
-    }
-    assertNoCredentialContent(patchBytes);
     await assertTrustedRepositoryState(repository, source.revision);
 
     const stateDirectory = join(repository, ".state");
@@ -405,58 +394,11 @@ export class SourceTransport {
     );
     const validationWorkspace = join(validationRoot, "workspace");
     try {
-      await this.materializeSourceArchive(source, validationWorkspace);
-      await this.initializeActorBaseline(
+      const materialized = await this.materializeValidatedPatch(
+        source,
+        patch,
         validationWorkspace,
-        source.revision,
-      );
-      await run(
-        "git",
-        [
-          "-c",
-          "core.hooksPath=/dev/null",
-          "apply",
-          "--binary",
-          "--index",
-          "--whitespace=error-all",
-          patch.path,
-        ],
-        {
-          cwd: validationWorkspace,
-          maxOutputBytes: 8_192,
-        },
-      );
-      await scanWorkspace(
-        validationWorkspace,
-        this.#maxFiles,
-        this.#maxFileBytes,
-      );
-      await assertGitIndexModes(validationWorkspace, this.#maxPatchBytes);
-      const validatedPaths = parseNullPaths(
-        await run(
-          "git",
-          ["diff", "--cached", "--name-only", "-z", "HEAD", "--", "."],
-          {
-            cwd: validationWorkspace,
-            maxOutputBytes: this.#maxPatchBytes,
-          },
-        ),
-      );
-      assertSamePaths(patch.changedPaths, validatedPaths);
-      for (const path of validatedPaths) {
-        validateTransportPath(path);
-        assertNotCredentialPath(path);
-        if (
-          options.allowProtectedPaths !== true &&
-          isProtectedPath(path)
-        ) {
-          throw new Error("Actor patch changes protected safety policy");
-        }
-      }
-      await scanChangedFileContents(
-        validationWorkspace,
-        validatedPaths,
-        this.#maxFileBytes,
+        options,
       );
 
       await assertTrustedRepositoryState(repository, source.revision);
@@ -476,9 +418,90 @@ export class SourceTransport {
           maxOutputBytes: 8_192,
         },
       );
-      return validatedPaths;
+      return materialized.changedPaths;
     } finally {
       await rm(validationRoot, { recursive: true, force: true });
+    }
+  }
+
+  async materializeValidatedPatch(
+    source: SourceArchiveArtifact,
+    patch: PatchArtifact,
+    workspacePath: string,
+    options: ApplyPatchOptions = {},
+  ): Promise<MaterializedPatch> {
+    assertRevision(source.revision);
+    if (source.revision !== patch.sourceRevision) {
+      throw new Error("Patch source revision does not match the archive");
+    }
+    const patchBytes = await readBoundedFile(
+      patch.path,
+      this.#maxPatchBytes,
+      "Actor patch",
+    );
+    if (
+      patchBytes.length !== patch.bytes ||
+      sha256(patchBytes) !== patch.sha256
+    ) {
+      throw new Error("Actor patch integrity check failed");
+    }
+    assertNoCredentialContent(patchBytes);
+
+    const workspace = resolve(workspacePath);
+    await this.materializeSourceArchive(source, workspace);
+    const baseline = await this.initializeActorBaseline(
+      workspace,
+      source.revision,
+    );
+    try {
+      await run(
+        "git",
+        [
+          "-c",
+          "core.hooksPath=/dev/null",
+          "apply",
+          "--binary",
+          "--index",
+          "--whitespace=error-all",
+          patch.path,
+        ],
+        {
+          cwd: workspace,
+          maxOutputBytes: 8_192,
+        },
+      );
+      await scanWorkspace(workspace, this.#maxFiles, this.#maxFileBytes);
+      await assertGitIndexModes(workspace, this.#maxPatchBytes);
+      const changedPaths = parseNullPaths(
+        await run(
+          "git",
+          ["diff", "--cached", "--name-only", "-z", "HEAD", "--", "."],
+          {
+            cwd: workspace,
+            maxOutputBytes: this.#maxPatchBytes,
+          },
+        ),
+      );
+      assertSamePaths(patch.changedPaths, changedPaths);
+      for (const path of changedPaths) {
+        validateTransportPath(path);
+        assertNotCredentialPath(path);
+        if (
+          options.allowProtectedPaths !== true &&
+          isProtectedPath(path)
+        ) {
+          throw new Error("Actor patch changes protected safety policy");
+        }
+      }
+      await scanChangedFileContents(
+        workspace,
+        changedPaths,
+        this.#maxFileBytes,
+      );
+      return { baseline, changedPaths };
+    } catch (error) {
+      await rm(workspace, { recursive: true, force: true });
+      throw error;
     }
   }
 

@@ -323,3 +323,61 @@ architecture and its temporary namespace was deleted.
 Direct AKS Kata satisfies the initial sandbox boundary. This pool cannot host a
 Substrate KVM microVM either outside or inside Kata. The gVisor/control-plane
 rows remain open.
+
+## v8 - Remote Pi actor with local Copilot trust
+
+```text
+Trusted workstation
+  +-- committed fixture repository
+  +-- SourceTransport: archive + manifest
+  +-- loopback Copilot broker (existing local login)
+  +-- trusted bridge
+  |     `-- actor ID -> distinct local broker capability
+  `-- kubectl port-forward -> relay ClusterIP
+          |
+          +-- authenticated job proxy
+          |     `-- actor ClusterIP /v1/run
+          |
+          `-- authenticated WebSocket model tunnel
+                ^
+                |
+AKS pi-substrate namespace
+  +-- system pool: runc model relay
+  |     +-- no cloud/model credential
+  |     `-- egress only actor + DNS
+  `-- sandbox pool: Kata Pi actor
+        +-- archive -> isolated emptyDir -> actor-local Git
+        +-- constrained Pi read/edit/write/test tools
+        +-- model calls only to relay
+        +-- ingress only relay; egress only relay + DNS
+        +-- successful test -> fresh replay/test of exact patch
+        `-- one job -> pod exit -> integrity-tagged binary patch
+
+Trusted workstation
+  `-- disposable replay -> policy scan
+        -> no-network container test -> prevalidated local commit
+```
+
+### Reason for change
+
+The runtime baseline proved direct Kata isolation, but a useful actor also
+needed credential-free model access and source transport. Direct port-forward
+to the Kata guest failed at pod-netns loopback, so the runc relay became the
+single private ingress for both model tunneling and authenticated jobs.
+
+### Security implications
+
+Five POC capabilities remain distinct: actor-to-relay model access, bridge
+tunnel, trusted job client, relay-to-actor job delivery, and
+bridge-to-local-broker. The actor gets only the delivery bearer's digest. None
+is a GitHub, Copilot, Azure, registry, or kubeconfig credential. No trusted
+directory is mounted. Actor patches require a successful test event plus an
+independent exact-patch test. Trusted tests run in a no-network container before
+application.
+
+### Result
+
+The digest-pinned Kata actor edited and tested one fixture, returned only
+`math.js`, and the trusted side replayed, tested, and committed it. Removing
+the bridge caused `actor_acceptance_failed` and no patch. Two-actor
+orchestration and remote lifecycle remain open.

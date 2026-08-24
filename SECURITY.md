@@ -30,6 +30,44 @@ and credential-like content. Returned full-index binary patches are applied to
 a disposable validation repository before being staged in a clean trusted
 repository. Safety-policy changes require an explicit trusted-call override.
 
+## Remote model and job boundary
+
+The AKS relay is a ClusterIP-only service with four distinct POC capabilities:
+
+- an actor capability authenticates model requests to the relay;
+- a tunnel capability authenticates the trusted local WebSocket bridge;
+- a trusted job-client capability authenticates archive/task submission;
+- a different delivery capability authenticates the relay's cluster-local
+  forward to the actor. The actor stores only its SHA-256 verifier, not the
+  reusable bearer.
+
+The relay never receives a GitHub or Copilot credential. It forwards only the
+authenticated actor ID over the WebSocket. The trusted bridge maps that ID to a
+fifth, separate local broker capability and can send it only to a loopback
+broker URL. If the bridge disconnects, model requests fail closed. The remote
+actor exports no patch unless its event trace contains a successful
+`workspace_test` and a clean replay of the exact final patch passes an
+independent test. Each actor pod serves one job and then exits, which removes
+test descendants and in-memory capabilities.
+
+Every smoke run first removes the old relay and actor deployments, then deletes
+and recreates the two POC capability Secrets. This avoids Kubernetes
+server-side apply retaining revoked data keys and prevents old pods from
+continuing to use prior capabilities during rotation.
+
+The actor runs non-root under `kata-vm-isolation`, with a read-only root
+filesystem, dropped capabilities, no privilege escalation, no service-account
+token, no host volume, and an ephemeral `emptyDir` workspace. Cilium permits
+actor ingress only from the relay and actor egress only to the relay and
+cluster DNS. The relay can egress only to the actor and cluster DNS.
+
+The trusted workstation never executes returned actor code directly. It
+materializes the validated patch into a separate workspace, removes Git
+metadata, and runs the test in a non-root Docker container with no network,
+dropped capabilities, a read-only root filesystem, a read-only source mount,
+bounded CPU/memory/PIDs, and no host credential mount. Only the already
+validated Git index is committed locally.
+
 ## Prohibited data
 
 Never commit or capture token values, credential files, kubeconfig contents,

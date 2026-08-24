@@ -1,0 +1,15 @@
+{
+  "name": "@pisa/remote-actor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@pisa/copilot-broker": "0.0.0",
+    "@pisa/orchestrator": "0.0.0",
+    "@pisa/pi-actor": "0.0.0",
+    "@pisa/protocol": "0.0.0"
+  }
+}

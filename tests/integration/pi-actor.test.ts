@@ -18,7 +18,10 @@ import {
   BrokerServer,
   FakeModelBackend,
 } from "../../packages/copilot-broker/src/index.js";
-import { PiActor } from "../../packages/pi-actor/src/index.js";
+import {
+  PiActor,
+  WorkspacePolicy,
+} from "../../packages/pi-actor/src/index.js";
 
 const fixture = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -131,6 +134,48 @@ describe("Pi actor", () => {
     assert.match(
       result.events.find((event) => event.isError)?.error ?? "",
       /Actor tools cannot access Git metadata/,
+    );
+  });
+
+  test("hard-kills an allowlisted test process group after timeout", async () => {
+    await mkdir(scratchParent, { recursive: true });
+    const workspace = await mkdtemp(join(scratchParent, "pisa-test-timeout-"));
+    workspaces.push(workspace);
+    await writeFile(
+      join(workspace, "package.json"),
+      JSON.stringify({
+        private: true,
+        scripts: { test: "node stubborn.js" },
+      }),
+      "utf8",
+    );
+    await writeFile(
+      join(workspace, "stubborn.js"),
+      [
+        "import { writeFileSync } from 'node:fs';",
+        "process.on('SIGTERM', () => undefined);",
+        "setTimeout(() => writeFileSync('escaped.txt', 'alive'), 1000);",
+        "setInterval(() => undefined, 1000);",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const policy = await WorkspacePolicy.create(workspace);
+    const started = Date.now();
+    const result = await policy.bashOperations().exec(
+      "npm test",
+      workspace,
+      {
+        timeout: 50,
+        onData: () => undefined,
+      },
+    );
+    assert.notEqual(result.exitCode, 0);
+    assert.ok(Date.now() - started < 2_000);
+    await new Promise((resolveWait) => setTimeout(resolveWait, 1_100));
+    await assert.rejects(
+      readFile(join(workspace, "escaped.txt"), "utf8"),
+      /ENOENT/,
     );
   });
 });

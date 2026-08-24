@@ -5,10 +5,10 @@ AKS workloads while keeping GitHub Copilot authentication on a trusted local
 machine.
 
 The local credential broker is proven against the authenticated GitHub Copilot
-SDK, and a constrained Pi SDK actor has completed a real read, edit, and test
-task through that broker. Trusted archive/patch transport and the pinned
-upstream Agent Substrate lifecycle are also proven locally. Remote actor and AKS
-work remains in progress. See [STATUS.md](STATUS.md) for verified capabilities,
+SDK, and constrained Pi SDK actors have completed real read, edit, and test
+tasks both locally and in an AKS Kata guest. Trusted archive/patch transport and
+the pinned upstream Agent Substrate lifecycle are also proven. Multi-actor and
+remaining runtime-matrix work remains in progress. See [STATUS.md](STATUS.md) for verified capabilities,
 [DESIGN.md](DESIGN.md) for the authoritative design, and
 [docs/LAB_NOTES.md](docs/LAB_NOTES.md) for the append-only experiment record.
 
@@ -178,3 +178,57 @@ The same node does not expose a usable KVM API to a runc pod, and KVM
 passthrough into Kata could not create a sandbox. Therefore this pool is
 accepted for direct Kata actor isolation but blocked for nested Substrate
 microVM placement.
+
+## Remote AKS Pi actor
+
+The remote path keeps authenticated Copilot entirely on the trusted
+workstation:
+
+```text
+trusted source archive + job
+  -> loopback kubectl port-forward
+  -> private relay ClusterIP
+  -> AKS Kata Pi actor
+  -> integrity-tagged binary patch
+  -> trusted disposable replay + test + local commit
+
+AKS actor model request
+  -> private relay
+  -> authenticated WebSocket over the same port-forward
+  -> trusted loopback broker
+  -> existing local Copilot login
+```
+
+The path uses separate high-entropy capabilities for actor model access,
+bridge tunneling, trusted job submission, and relay-to-actor delivery. The
+actor receives only a one-way digest of the delivery capability. The relay
+sends only the authenticated actor identity over the tunnel; the trusted
+bridge maps that identity to a fifth, local-only broker capability. No GitHub,
+Copilot, Azure, kubeconfig, registry, or workstation credential enters the
+cluster.
+
+Build and push the harness image, then run the real remote proof:
+
+```bash
+make aks-harness-image
+npm run smoke:remote-actor
+```
+
+The smoke rotates in-memory-generated Kubernetes capabilities without printing
+them, deploys only ClusterIP services, starts loopback port-forwards, sends the
+fixture as a manifest-backed archive, requires a successful actor-side
+`workspace_test`, independently replays and retests the exact final patch in
+the Kata actor, validates the returned patch locally, reruns tests in a
+no-network, read-only-mount Docker sandbox, and commits only the prevalidated
+index in a disposable trusted repository. The actor pod is recycled after
+every job. The smoke then disconnects the local bridge and verifies the actor
+cannot return an accepted patch. Success prints:
+
+```text
+PISA_REMOTE_ACTOR_OK
+```
+
+The digest and sanitized result are in
+[experiments/008-remote-actor/RESULTS.md](experiments/008-remote-actor/RESULTS.md).
+The deployed actor remains fail closed after the smoke exits because the local
+bridge and broker are gone.

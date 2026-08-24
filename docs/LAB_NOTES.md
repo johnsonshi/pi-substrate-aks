@@ -568,3 +568,106 @@ matrix must preserve this distinction.
 Use direct AKS Kata as the secure fallback path. Continue with a separate
 pinned Substrate control-plane/gVisor attempt and the OSS Agent Sandbox
 controller path.
+
+## 2026-08-24 03:35 PDT - First remote Pi actor through local Copilot
+
+### Goal
+
+Run one real coding task inside AKS Kata without placing any GitHub, Copilot,
+Azure, kubeconfig, registry, or workstation credential in the actor.
+
+### Hypothesis
+
+A ClusterIP relay can authenticate a credential-free actor, carry model turns
+over a trusted WebSocket through `kubectl port-forward`, proxy jobs to the Kata
+pod, and fail closed when the workstation bridge disconnects. The existing
+archive/patch transport can preserve the source boundary remotely.
+
+### Environment
+
+- local git commit: `74e507d`
+- AKS/context: `pisa-aks`
+- actor runtime: `kata-vm-isolation` on the `sandbox` pool
+- relay runtime: runc on the `system` pool
+- harness image:
+  `pisasubstrate84acr.azurecr.io/pisa-harness@sha256:e165adfda8b91490fa4b7339541d4e5bfca52448d4d3a00fd3a86cd6d4d7b326`
+- model: authenticated local GitHub Copilot SDK through the loopback broker
+
+### Actions
+
+Implemented a bounded relay and trusted bridge with separate actor and tunnel
+authentication, route allowlisting, actor identity forwarding, local broker
+token mapping, concurrency limits, and disconnect failure. Trusted job and
+relay-to-actor delivery credentials are distinct; the actor has only a digest
+of the latter. Implemented a remote actor service that validates an archive
+manifest, creates fresh actor-local Git state, runs the existing constrained Pi
+actor, independently replays/tests the final patch, and returns a bounded
+binary patch. Each actor pod exits after one job.
+
+Built and pushed the harness image by digest. Deployed ClusterIP-only relay and
+actor Services, disabled both service-account token mounts, applied Restricted
+Pod Security, placed the actor in Kata, and limited network policy to
+relay/DNS paths.
+
+The initial deployment plus an unconditional rollout restart surged two
+singleton Kata sandboxes, both of which timed out. Switched both deployments to
+`Recreate` and a unique pod-template revision. A subsequent single pod still
+failed; the previously known-good Kata probe now failed too. Deleted only the
+POC workloads, scaled the disposable `sandbox` pool to zero and back to one,
+and confirmed `PISA_RUNTIME_PROBES_OK` on the replacement node.
+
+The healthy Kata actor then returned an empty reply through direct
+port-forward. Kubelet reported that it could not connect to
+`127.0.0.1:8080` inside the pod network namespace. Added a capability-protected
+job proxy to the runc relay and limited actor ingress to that relay.
+
+Early model attempts exposed two more acceptance issues. One returned a patch
+without a successful test; another trusted npm invocation wrote HOME state
+inside the disposable repository. Added a remote test gate that returns
+`actor_acceptance_failed` and no patch, bounded fresh-session retries, and a
+credential-free trusted HOME outside the repository. A subsequent review found
+that direct trusted-side `npm test` still executed model-authored code under the
+workstation account. Moved the trusted test into a non-root, no-network Docker
+container with a read-only source mount and resource limits; the local commit
+uses only the separately validated index.
+
+The first verifier-only deployment revealed that `kubectl apply` retained the
+old raw `job-token` key in the actor Secret even though the pod no longer
+referenced it. Changed rotation to stop both old deployments and
+delete/recreate both disposable capability Secrets before applying new
+workloads. The live actor Secret now contains only the model actor capability
+and the one-way job-delivery verifier.
+
+### Result
+
+**PASS.** The final run completed in one accepted actor attempt. Pi read and
+edited `math.js`, ran `workspace_test` successfully, and returned only that
+path. The trusted side verified archive/patch hashes, replayed the patch, ran
+`npm test`, committed locally in the disposable repository, and remained
+clean. Both Services were ClusterIP, the actor used Kata, and service-account
+token automount was false.
+
+After closing the trusted bridge, the same task could not obtain an accepted
+model result. The remote service returned `422 actor_acceptance_failed` and no
+patch. The smoke printed exactly `PISA_REMOTE_ACTOR_OK`.
+
+### Evidence
+
+- `experiments/008-remote-actor/RESULTS.md`
+- `evidence/remote-actor/remote-smoke.txt`
+- `packages/model-relay/`
+- `packages/remote-actor/`
+- `deploy/aks/remote-actor.yaml`
+
+### Interpretation
+
+The actor does not need a Copilot credential; it needs a narrow revocable model
+capability. A private relay plus a local bridge preserves that distinction.
+Kata networking also proves that a pod abstraction can differ from runc in
+operator tooling even when ordinary Service traffic works.
+
+### Decision / next step
+
+Keep the relay as the only cluster ingress and enforce actor-side test success
+before patch export. Checkpoint this milestone, then expand the same boundary to
+two isolated concurrent actors before attempting remote lifecycle semantics.

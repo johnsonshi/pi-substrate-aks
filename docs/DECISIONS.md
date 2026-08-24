@@ -369,3 +369,56 @@ separate from actors and be removed after each probe.
 
 - `experiments/007-aks-runtime-matrix/RESULTS.md`
 - `evidence/aks-runtime/runtime-probes.txt`
+
+## D-010: Keep model credentials local behind a private relay
+
+**Status:** accepted
+
+### Context
+
+The AKS actor needs model completions and task input, but cannot receive
+Copilot/GitHub credentials, a kubeconfig, or a trusted filesystem mount. Direct
+port-forward to the Kata guest also fails because kubelet targets pod-netns
+loopback rather than the guest-backed pod IP.
+
+### Options considered
+
+- Put Copilot authentication in the actor.
+- Publish the local broker or actor through a public service.
+- Use a ClusterIP relay, a trusted outbound WebSocket bridge over loopback
+  port-forward, and a relay-to-actor job proxy.
+
+### Decision
+
+Keep the authenticated Copilot SDK in a loopback broker on the workstation.
+The actor authenticates to the relay with a POC capability. A separately
+authenticated bridge receives only actor identity and maps it to a distinct
+local broker capability. Job archives enter the same port-forward through a
+trusted-client capability; the relay swaps it for a different actor-delivery
+bearer. The actor receives only the delivery bearer's SHA-256 verifier.
+
+### Rationale
+
+No GitHub/Copilot/Azure credential crosses the workstation boundary. ClusterIP
+services and port-forwarding avoid public exposure. Separate capabilities and
+the one-way actor verifier prevent an actor from impersonating the bridge or
+trusted job client. The relay path also works around Kata's direct
+port-forward limitation without opening actor ingress broadly.
+
+### Consequences
+
+The workstation bridge must remain connected for model access. Disconnect is
+an immediate revocation boundary: model work fails and the actor test gate
+exports no patch. The relay becomes a narrow POC component that can see task
+and model payloads but has no cloud/model credential and tightly restricted
+egress. Each actor pod serves one job and exits so untrusted test descendants
+cannot persist. Actor state is ephemeral; multi-actor and lifecycle work
+remains.
+
+### Evidence
+
+- `packages/model-relay/`
+- `packages/remote-actor/`
+- `deploy/aks/remote-actor.yaml`
+- `experiments/008-remote-actor/RESULTS.md`
+- `evidence/remote-actor/remote-smoke.txt`

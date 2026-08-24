@@ -80,6 +80,7 @@ export class WorkspacePolicy {
         }
         const timeoutMs = Math.min(options.timeout ?? 60_000, 120_000);
         return await new Promise<{ exitCode: number | null }>((resolvePromise, reject) => {
+          const detached = process.platform !== "win32";
           const child = spawn(spec.executable, spec.args, {
             cwd: canonicalCwd,
             env: {
@@ -91,23 +92,44 @@ export class WorkspacePolicy {
               npm_config_fund: "false",
               npm_config_update_notifier: "false",
             },
+            detached,
             shell: false,
             stdio: ["ignore", "pipe", "pipe"],
           });
           child.stdout.on("data", options.onData);
           child.stderr.on("data", options.onData);
-          const timer = setTimeout(() => child.kill("SIGTERM"), timeoutMs);
+          let killTimer: NodeJS.Timeout | undefined;
+          let terminating = false;
+          const terminate = (): void => {
+            if (terminating) {
+              return;
+            }
+            terminating = true;
+            signalProcessTree(child.pid, "SIGTERM", detached);
+            killTimer = setTimeout(
+              () => signalProcessTree(child.pid, "SIGKILL", detached),
+              250,
+            );
+          };
+          const timer = setTimeout(terminate, timeoutMs);
           const abort = (): void => {
-            child.kill("SIGTERM");
+            terminate();
           };
           options.signal?.addEventListener("abort", abort, { once: true });
           child.once("error", (error) => {
             clearTimeout(timer);
+            if (killTimer !== undefined) {
+              clearTimeout(killTimer);
+            }
             options.signal?.removeEventListener("abort", abort);
             reject(error);
           });
           child.once("close", (code) => {
             clearTimeout(timer);
+            if (killTimer !== undefined) {
+              clearTimeout(killTimer);
+            }
+            signalProcessTree(child.pid, "SIGKILL", detached);
             options.signal?.removeEventListener("abort", abort);
             resolvePromise({ exitCode: code });
           });
@@ -180,6 +202,31 @@ export class WorkspacePolicy {
     return child === ".." || child.startsWith(`..${sep}`) || isAbsolute(child)
       ? undefined
       : child;
+  }
+}
+
+function signalProcessTree(
+  pid: number | undefined,
+  signal: NodeJS.Signals,
+  detached: boolean,
+): void {
+  if (pid === undefined) {
+    return;
+  }
+  try {
+    if (detached) {
+      process.kill(-pid, signal);
+    } else {
+      process.kill(pid, signal);
+    }
+  } catch (error) {
+    if (
+      !(error instanceof Error) ||
+      !("code" in error) ||
+      (error as NodeJS.ErrnoException).code !== "ESRCH"
+    ) {
+      throw error;
+    }
   }
 }
 

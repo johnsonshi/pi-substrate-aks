@@ -1,0 +1,14 @@
+{
+  "name": "@pisa/model-relay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@pisa/copilot-broker": "0.0.0",
+    "@pisa/protocol": "0.0.0",
+    "ws": "8.21.3"
+  }
+}

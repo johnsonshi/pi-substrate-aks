@@ -1,4 +1,4 @@
-.PHONY: aks-provision aks-runtime-probe-image aks-runtime-probes aks-teardown aks-verify doctor test
+.PHONY: aks-harness-image aks-provision aks-runtime-probe-image aks-runtime-probes aks-teardown aks-verify doctor test
 
 doctor:
 	./scripts/preflight.sh
@@ -17,6 +17,9 @@ aks-runtime-probe-image:
 
 aks-runtime-probes:
 	./scripts/run-runtime-probes.sh
+
+aks-harness-image:
+	./scripts/build-harness-image.sh
 
 aks-teardown:
 	./scripts/aks-teardown.sh

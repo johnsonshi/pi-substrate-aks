@@ -100,6 +100,33 @@ access that never leaves the local machine.
 - A locally configured buildx default can silently target an unrelated
   Kubernetes builder. Selecting a dedicated docker-container builder by name
   kept image building local and avoided modifying cluster build resources.
+- A failed Kata sandbox experiment can leave a one-node pool unable to start
+  even the previously known-good probe. Rechecking the smallest accepted probe
+  distinguished runtime damage from application failure; recycling only the
+  disposable Kata user pool restored it.
+- Kubernetes port-forwarding is not transparent across every sandbox network
+  model. The healthy Kata actor answered readiness on its pod IP, while kubelet
+  could not connect to the guest service through pod-netns loopback. Routing
+  jobs through a tiny runc relay preserved ClusterIP-only exposure.
+- Separate actor-model, bridge, trusted-job, actor-delivery, and local-broker
+  capabilities make the trust handoff inspectable. The actor gets only the
+  delivery token's one-way verifier. The cluster receives no Copilot
+  credential, and closing one local WebSocket immediately removes model
+  access.
+- "The patch applies and tests locally" is weaker than "the actor tested its
+  own change." A server-side acceptance gate now exports no patch unless the
+  Pi trace includes a successful test tool result; local replay remains a
+  second independent gate.
+- Trusted orchestration needs workspace hygiene too. Pointing npm HOME inside
+  the disposable repository created an unrelated untracked directory; a
+  separate credential-free HOME keeps the trusted commit exact.
+- "Trusted replay" must not mean executing model-authored code under a
+  credentialed desktop account. Run the returned tree in a no-network
+  container with no host credential mount, and commit only the separately
+  validated Git index.
+- Applying a Kubernetes Secret is not key revocation: merge semantics can keep
+  omitted data keys. Stop the old capability holders, delete/recreate the
+  disposable Secret, then start workloads with the new key set.
 
 ## Measurements to capture
 
