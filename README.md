@@ -253,3 +253,33 @@ The digest and sanitized result are in
 [experiments/008-remote-actor/RESULTS.md](experiments/008-remote-actor/RESULTS.md).
 The deployed actor remains fail closed after the smoke exits because the local
 bridge and broker are gone.
+
+## Security acceptance
+
+The security gate combines deterministic policy tests with a direct live-actor
+probe:
+
+```bash
+make security
+```
+
+The local suite makes an adversarial fake model follow prompt-injection text
+that requests outside/Git reads, an outside write, and a destructive command.
+All actions must be rejected without disclosing the operator canary or changing
+protected files. The same suite covers actor/session identity, relay
+authentication, path/symlink confinement, request bounds, and process-group
+termination.
+
+The live probe verifies the deployed workload still uses Kata, has no
+service-account token or external credential-related environment names, cannot
+reach the Kubernetes API, Azure IMDS, or public internet, and remains behind
+ClusterIP-only Services with the expected split capability key names. It
+inspects names and booleans only, never capability values or environment
+values. See
+[experiments/010-security-acceptance/RESULTS.md](experiments/010-security-acceptance/RESULTS.md).
+
+Run the local portion without AKS:
+
+```bash
+npm run security:local
+```

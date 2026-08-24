@@ -42,12 +42,13 @@ Last updated: 2026-08-24
 | Workspace isolation | PASS | Canonical-path/tool policy plus a private Kata `emptyDir`; no trusted filesystem mount |
 | Substrate pause/resume | PASS (local kind) | Stock `onPause: Full` restored memory and DurableDir |
 | Substrate suspend/resume | PASS (local kind) | `onCommit: Data` and `onCommit: Full` semantics proven; `evidence/substrate-kind/lifecycle.txt` |
-| Prompt-injection fixture contained | PENDING | |
+| Prompt-injection fixture contained | PASS | Adversarial fake model attempted outside/Git reads, outside write, and destructive command; all failed with no canary disclosure or mutation |
+| Consolidated security acceptance | PASS | `make security` ran 16 local identity/containment cases and live Kata token/path/network/service probes; `experiments/010-security-acceptance/RESULTS.md` |
 | Local Copilot broker with fake backend | PASS | Four unit/integration cases in `tests/unit/copilot-broker.test.ts` |
 | Real Copilot SDK request using local login | PASS | `experiments/001-local-broker/RESULTS.md` |
 | Pi SDK actor with fake broker | PASS | `experiments/002-local-pi-actor/RESULTS.md` |
 | Real Pi coding task through local Copilot | PASS | Exact `PISA_PI_COPILOT_OK` smoke marker; `experiments/003-local-pi-copilot/RESULTS.md` |
-| Full local test and typecheck | PASS | 27 tests passed; `tsc --noEmit` passed after remote hardening |
+| Full local test and typecheck | PASS | 28 tests passed; `tsc --noEmit` passed after security acceptance |
 | Production dependency audit | PASS | Patched `@earendil-works/pi-*` `0.84.2`; `npm audit --omit=dev` reports zero advisories |
 | Trusted archive-in / binary patch-out transport | PASS | `experiments/004-source-transport/RESULTS.md`; seven transport integration cases |
 | In-cluster relay and trusted local bridge | PASS | Separate model/tunnel/job-client/job-delivery/broker capabilities, ClusterIP-only services, bounded proxying, and disconnect failure |

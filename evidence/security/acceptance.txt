@@ -1,0 +1,44 @@
+timestamp_utc=2026-08-24T11:45:38Z
+local_security_suite=START
+✔ relay forwards an authenticated actor through the trusted bridge (55.361083ms)
+✔ relay carries a maximally escaped body without dropping the bridge (18.523708ms)
+✔ relay fails closed without a connected trusted bridge (3.380375ms)
+✔ relay rejects actor authentication before proxying (2.231333ms)
+✔ relay proxies capability-authenticated jobs only to a private target (8.764ms)
+✔ relay rejects a malformed upgrade target without crashing (4.217583ms)
+▶ Pi actor
+  ✔ edits a fixture and runs its test through the fake broker (314.295416ms)
+  ✔ blocks a model-requested path escape (22.413791ms)
+  ✔ blocks a canonical symlink escape (21.72125ms)
+  ✔ blocks Git metadata through a symlink alias (24.851125ms)
+  ✔ hard-kills an allowlisted test process group after timeout (1158.337833ms)
+✔ Pi actor (1542.36625ms)
+✔ repository prompt injection cannot escape actor policy (82.919042ms)
+▶ Copilot broker
+  ✔ serves credential-free health and authenticated model sessions (37.1915ms)
+  ✔ prevents one actor from using another actor's session (11.065833ms)
+  ✔ rejects malformed and oversized requests without echoing input (11.834708ms)
+  ✔ enforces concurrency and request timeouts (34.570958ms)
+✔ Copilot broker (95.341125ms)
+ℹ tests 16
+ℹ suites 2
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3172.81825
+local_security_suite=PASS
+remote_security_probe=START
+actor_pod=pisa-remote-actor-5c858dcd6d-w6wnx
+runtime_class=kata-vm-isolation
+service_account_token=false
+credential_environment_names=NONE
+kubernetes_api=blocked
+imds=blocked
+public_internet=blocked
+service_exposure=ClusterIP-only
+capability_secret_keys=expected
+PISA_REMOTE_SECURITY_OK
+remote_security_probe=PASS
+PISA_SECURITY_ACCEPTANCE_OK

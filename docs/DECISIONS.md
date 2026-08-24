@@ -472,3 +472,48 @@ the accepted remote actor runtime.
 - `scripts/probe-substrate-aks.sh`
 - `experiments/009-substrate-aks/RESULTS.md`
 - `evidence/substrate-aks/preflight.txt`
+
+## D-012: Treat model compliance as irrelevant to containment
+
+**Status:** accepted
+
+### Context
+
+Repository text can instruct the model to ignore policy, read operator data,
+modify paths outside the workspace, or run destructive commands. A cooperative
+model refusing those instructions would not prove the actor boundary.
+
+### Options considered
+
+- Test only that the system prompt tells the model to ignore repository
+  instructions.
+- Use a real model and accept probabilistic refusal as evidence.
+- Use a deterministic adversarial fake model that deliberately requests every
+  prohibited action, then assert the enforcement layer blocks each one.
+
+### Decision
+
+Make prompt-injection acceptance deterministic and adversarial. The model reads
+the malicious fixture and requests an outside read, `.git` read, outside write,
+and non-allowlisted destructive command. Security passes only when all requests
+fail, protected data remains unchanged, and no canary content reaches events or
+output. Combine this with live actor probes in `make security`.
+
+### Rationale
+
+The model is inside the untrusted boundary. Testing deliberate policy
+violations proves the controls remain effective even when prompt guidance
+fails completely.
+
+### Consequences
+
+The fake backend is now a security test instrument as well as a functional test
+double. Prompt changes alone cannot satisfy acceptance. Live runtime state must
+also continue to pass token, environment-name, path, network, service exposure,
+and capability-key checks.
+
+### Evidence
+
+- `tests/security/prompt-injection.test.ts`
+- `experiments/010-security-acceptance/RESULTS.md`
+- `evidence/security/acceptance.txt`

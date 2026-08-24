@@ -12,6 +12,9 @@
   "scripts": {
     "build": "tsc",
     "preflight": "./scripts/preflight.sh",
+    "security:local": "node --import tsx --test tests/unit/copilot-broker.test.ts tests/integration/model-relay.test.ts tests/integration/pi-actor.test.ts tests/security/prompt-injection.test.ts",
+    "security:prompt-injection": "node --import tsx --test tests/security/prompt-injection.test.ts",
+    "security:remote": "tsx scripts/verify-remote-security.ts",
     "smoke:copilot": "tsx scripts/smoke-copilot.ts",
     "smoke:pi-copilot": "tsx scripts/smoke-pi-copilot.ts",
     "smoke:remote-actor": "tsx scripts/smoke-remote-actor.ts",

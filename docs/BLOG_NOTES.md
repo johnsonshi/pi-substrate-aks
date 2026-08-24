@@ -136,6 +136,12 @@ access that never leaves the local machine.
   APIs, the upstream gVisor worker's host path, mount propagation, AppArmor
   unconfined, and broad capabilities would need a separate trust decision; it
   is not the same boundary as a restricted Kata actor.
+- Prompt-injection tests should make the model malicious on purpose. A
+  cooperative refusal proves prompt behavior; an adversarial fake model that
+  requests outside reads/writes and destructive commands proves enforcement.
+- Security evidence should avoid becoming a credential collection mechanism.
+  The live acceptance probe records only environment names, Secret key names,
+  path booleans, placement, and connectivity outcomes—never values.
 
 ## Measurements to capture
 

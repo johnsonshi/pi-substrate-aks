@@ -415,3 +415,42 @@ Both required certificate resources were absent, and server-side dry run
 removed both projected certificate sources. Substrate on AKS is blocked at the
 control-plane boundary. The direct credential-free Kata architecture remains
 unchanged.
+
+## v10 - Measured policy and runtime acceptance
+
+```text
+Untrusted repository prompt
+  `-- adversarial model deliberately requests:
+        +-- outside read ---------+
+        +-- .git read ------------+--> actor policy rejects
+        +-- outside write --------+
+        `-- destructive command --+
+                                      |
+                                      `-- no disclosure or mutation
+
+Live AKS Kata actor
+  +-- no SA token / external credential env names / selected host paths
+  +-- API, IMDS, and public TCP reachability blocked
+  +-- ClusterIP-only relay and actor
+  `-- expected split capability key names; values unread
+```
+
+### Reason for change
+
+The architecture described prompt injection and runtime controls, but needed a
+single reproducible acceptance command that exercises deliberate model
+noncompliance and measures the deployed actor.
+
+### Security implications
+
+The model and repository prompt can collude without becoming an authority.
+Canonical paths, protected metadata, command allowlisting, actor identity,
+network policy, and runtime configuration remain independently enforced. The
+live verifier inspects only names and booleans so the evidence path cannot
+capture capabilities.
+
+### Result
+
+Sixteen local security-relevant tests and all live Kata probes passed.
+`make security` emitted `PISA_SECURITY_ACCEPTANCE_OK` and wrote sanitized
+evidence.

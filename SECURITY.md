@@ -68,12 +68,43 @@ token, no host volume, and an ephemeral `emptyDir` workspace. Cilium permits
 actor ingress only from the relay and actor egress only to the relay and
 cluster DNS. The relay can egress only to the actor and cluster DNS.
 
+## Enforced prompt boundary
+
+Repository instructions are deliberately treated as attacker-controlled data.
+The deterministic security fixture uses an adversarial fake model that follows
+repository instructions and attempts an outside read, Git metadata read,
+outside write, and destructive command. Canonical workspace checks, protected
+path rules, and exact command allowlisting reject those actions even though the
+model requests them. The test also proves that an operator-owned canary is not
+returned in actor events or output and that protected files remain unchanged.
+
+Prompt wording is defense in depth only. Enforced tools, source validation,
+runtime isolation, capability separation, and trusted patch validation are the
+security boundary.
+
 The trusted workstation never executes returned actor code directly. It
 materializes the validated patch into a separate workspace, removes Git
 metadata, and runs the test in a non-root Docker container with no network,
 dropped capabilities, a read-only root filesystem, a read-only source mount,
 bounded CPU/memory/PIDs, and no host credential mount. Only the already
 validated Git index is committed locally.
+
+## Security acceptance
+
+Run the deterministic local controls plus direct probes from the live Kata
+actor:
+
+```bash
+make security
+```
+
+The command checks broker/relay actor identity, workspace and process
+containment, prompt-injection resistance, RuntimeClass placement,
+service-account token absence, external credential-related environment names,
+selected prohibited paths, Kubernetes API/IMDS/public egress denial,
+ClusterIP-only exposure, and the expected capability Secret key names. It
+never reads Secret values or environment values. Sanitized evidence is written
+to `evidence/security/acceptance.txt`.
 
 ## Prohibited data
 

@@ -1,10 +1,13 @@
-.PHONY: aks-harness-image aks-provision aks-runtime-probe-image aks-runtime-probes aks-substrate-preflight aks-teardown aks-verify doctor test
+.PHONY: aks-harness-image aks-provision aks-runtime-probe-image aks-runtime-probes aks-substrate-preflight aks-teardown aks-verify doctor security test
 
 doctor:
 	./scripts/preflight.sh
 
 test:
 	npm test
+
+security:
+	./scripts/security-acceptance.sh
 
 aks-provision:
 	./scripts/aks-provision.sh
